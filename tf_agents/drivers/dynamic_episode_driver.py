@@ -79,6 +79,11 @@ class DynamicEpisodeDriver(driver.Driver):
         If env is not a tf_environment.Base or policy is not an instance of
         tf_policy.Base.
     """
+    if type(policy) == list:
+      self._policy_index = 0
+    else:
+      self._policy_index = None
+    
     super(DynamicEpisodeDriver, self).__init__(env, policy, observers,
                                                transition_observers)
     self._num_episodes = num_episodes
@@ -119,7 +124,11 @@ class DynamicEpisodeDriver(driver.Driver):
       Returns:
         loop_vars for next iteration of tf.while_loop.
       """
-      action_step = self.policy.action(time_step, policy_state)
+      if self.policy_index is not None:
+        action_step = self.policy[self._policy_index].action(time_step, policy_state)
+        self._policy_index = (self._policy_index + 1) % len(self.policy)
+      else:
+        action_step = self.policy.action(time_step, policy_state)
 
       # TODO(b/134487572): TF2 while_loop seems to either ignore
       # parallel_iterations or doesn't properly propagate control dependencies
