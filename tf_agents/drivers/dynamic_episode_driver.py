@@ -80,7 +80,7 @@ class DynamicEpisodeDriver(driver.Driver):
         tf_policy.Base.
     """
     if type(policy) == list:
-      self._policy_index = 0
+          self._policy_index = 0
     else:
       self._policy_index = None
     
@@ -124,7 +124,10 @@ class DynamicEpisodeDriver(driver.Driver):
       Returns:
         loop_vars for next iteration of tf.while_loop.
       """
-      if self.policy_index is not None:
+
+      # Here we implement the multi agent structure. Using multiple policy, one for each player,
+      # we altrnate the player (aka policy) which is moving. 
+      if self._policy_index is not None:
         action_step = self.policy[self._policy_index].action(time_step, policy_state)
         self._policy_index = (self._policy_index + 1) % len(self.policy)
       else:
@@ -211,7 +214,10 @@ class DynamicEpisodeDriver(driver.Driver):
       time_step = self.env.reset()
 
     if policy_state is None:
-      policy_state = self.policy.get_initial_state(self.env.batch_size)
+      if self._policy_index is not None:
+        policy_state = self.policy[self._policy_index].get_initial_state(self.env.batch_size)
+      else:
+        policy_state = self.policy.get_initial_state(self.env.batch_size)
 
     # Batch dim should be first index of tensors during data
     # collection.
