@@ -81,6 +81,11 @@ class DynamicEpisodeDriver(driver.Driver):
     """
     super(DynamicEpisodeDriver, self).__init__(env, policy, observers,
                                                transition_observers)
+    if type(policy) == list:
+      self._policy_index = 0
+    else:
+      self._policy_index = None
+
     self._num_episodes = num_episodes
     self._run_fn = common.function_in_tf1()(self._run)
     self._is_bandit_env = is_bandit_env(env)
@@ -119,7 +124,13 @@ class DynamicEpisodeDriver(driver.Driver):
       Returns:
         loop_vars for next iteration of tf.while_loop.
       """
-      action_step = self.policy.action(time_step, policy_state)
+
+      # in order to have multiple policy and simulate with multiple policy
+      if self._policy_index is not None:
+        action_step = self.policy[self._policy_index].action(time_step, policy_state)
+        self._policy_index = (self._policy_index + 1) % len(self.policy)
+      else:
+        action_step = self.policy.action(time_step, policy_state)
 
       # TODO(b/134487572): TF2 while_loop seems to either ignore
       # parallel_iterations or doesn't properly propagate control dependencies
@@ -202,8 +213,10 @@ class DynamicEpisodeDriver(driver.Driver):
       time_step = self.env.reset()
 
     if policy_state is None:
-      policy_state = self.policy.get_initial_state(self.env.batch_size)
-
+      if self._policy_index is not None:
+        policy_state = self.policy[self._policy_index].get_initial_state(self.env.batch_size)
+      else:
+        policy_state = self.policy.get_initial_state(self.env.batch_size)
     # Batch dim should be first index of tensors during data
     # collection.
     batch_dims = nest_utils.get_outer_shape(time_step,
