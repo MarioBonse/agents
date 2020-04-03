@@ -78,7 +78,12 @@ class PyDriver(driver.Driver):
     num_steps = 0
     num_episodes = 0
     while num_steps < self._max_steps and num_episodes < self._max_episodes:
-      action_step = self.policy.action(time_step, policy_state)
+      # in order to have multiple policy and simulate with multiple policy
+      if self._policy_index is not None:
+        action_step = self.policy[self._policy_index].action(time_step, policy_state)
+        self._policy_index = (self._policy_index + 1) % len(self.policy)
+      else:
+        action_step = self.policy.action(time_step, policy_state)
       next_time_step = self.env.step(action_step.action)
 
       traj = trajectory.from_transition(time_step, action_step, next_time_step)
@@ -91,6 +96,11 @@ class PyDriver(driver.Driver):
       num_steps += np.sum(~traj.is_boundary())
 
       time_step = next_time_step
-      policy_state = action_step.state
+
+      # for multiple policy 
+      if self._policy_index is not None:
+        policy_state = self.policy[self._policy_index].get_initial_state(self.env.batch_size)
+      else:
+        policy_state = self.policy.get_initial_state(self.env.batch_size)
 
     return time_step, policy_state

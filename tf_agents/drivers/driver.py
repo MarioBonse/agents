@@ -45,7 +45,15 @@ class Driver(object):
     """
 
     self._env = env
+
     self._policy = policy
+    if type(policy) == list:
+      print("You are using a list of policies instead of a single policy (non-self-play)")
+      print("Currently this is supported only on DynamicEpisodeDriver and PyDriver")
+      self._policy_index = 0
+    else:
+      self._policy_index = None
+      
     self._observers = observers or []
     self._transition_observers = transition_observers or []
 

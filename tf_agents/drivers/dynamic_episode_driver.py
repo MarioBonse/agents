@@ -81,10 +81,6 @@ class DynamicEpisodeDriver(driver.Driver):
     """
     super(DynamicEpisodeDriver, self).__init__(env, policy, observers,
                                                transition_observers)
-    if type(policy) == list:
-      self._policy_index = 0
-    else:
-      self._policy_index = None
 
     self._num_episodes = num_episodes
     self._run_fn = common.function_in_tf1()(self._run)
