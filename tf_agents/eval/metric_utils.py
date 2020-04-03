@@ -67,8 +67,13 @@ def compute(metrics,
     metric.reset()
 
   time_step = environment.reset()
-  policy_state = policy.get_initial_state(environment.batch_size)
+  
+  if type(policy) == list:
+      policy_state = policy[0].get_initial_state(environment.batch_size)
+  else:
+      policy_state = policy.get_initial_state(environment.batch_size)
 
+  
   driver = py_driver.PyDriver(
       environment,
       policy,
