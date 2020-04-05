@@ -207,7 +207,7 @@ class TFAgent(tf.Module):
         was not called).
     """
     print('Function is being executed in Python.\nIf you see this print more than once'
-          'per agent per code execution call for help.')
+          ' per agent per code execution call for help.')
     if self._enable_functions and getattr(self, "_train_fn", None) is None:
       raise RuntimeError(
           "Cannot find _train_fn.  Did %s.__init__ call super?"
