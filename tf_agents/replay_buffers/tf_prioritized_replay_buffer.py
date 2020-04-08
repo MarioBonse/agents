@@ -43,6 +43,7 @@ BufferInfo = collections.namedtuple('BufferInfo',
                                     ['ids', 'probabilities'])
 
 '''
+Se non sai come funziona nel dettaglio il PRB chiedi a me che ti faccio un sunto del paper che l'ha presentato.
 Un po' di note su come costruirlo:
 a) Il PRB avrà dei metodi self.get/set_priority che di fatto non fanno altro che far riferimento all'oggetto
   self.sum_tree.get/set_priority. Vedi implementazione DeepMind in prioritized_replay_memory.py che mi sembra 
@@ -59,6 +60,27 @@ b) Il PRB ha due situazioni diverse in cui assegna la priorità alle transizioni
         dell'agente o fuori usando la loss che ci viene ritornata... Io sarei a favore di farla dentro
         la funzione training passando il PRB (o un suo metodo self.update_priority()) all'agent.
         Leggi però le mie note sul training in cima (dopo gli import) al file eager_main.py
+        Il codice per fare sta cosa sarà una roba del tipo:
+        ...(esegui training e prendi la loss)
+        PRB.set_priority(indices, loss)
+        ...
+c) Il metodo self.get_priority sarà utilizzato nel metodo self.get_next() che genera il dataset
+    così da drigli come samplare.
+        
+
+Open Problems:
+a) Se guardi nelle note sopra, i metodi get/set_priority prendono in input degli indici che ti dicono 
+    quali sono gli indici nella memoria del PRB (delle transizioni che stai maneggiando). Come conciliare
+    questo con PRB.as_dataset() e l'update delle priority? Ovvero se come suggerisco sopra l'update delle 
+    priority viene chiamato nella funzione training dell'agent, la domanda è come fa l'agent a ricavare
+    gli indici da passare alla funzione set_priority() partendo dal batch di osservazioni che riceve...
+    Anche se facessimo l'update delle priority fuori dalla train dell'agent e dentro il for loop sul dataset
+    non penso questo cambierebbe nulla... Mi sembra che come unica soluzione si debba passare l'indice della
+    transizione insieme alla transizione quando il RB crea il batch con self.get_next()
+b) Mi sembra di capire che nell'implementazione DeepMind il PRB consideri un elemento come
+    obs, rew, action (e legal_actions e se lo stato è terminale, ma vabbeh), mentre tf-agents
+    di default prende anche lo stato successivo. Not sure se questo ci creerà più problemi 
+    nell'implementarlo, ma spero/penso di no
 '''
 @gin.configurable
 class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
