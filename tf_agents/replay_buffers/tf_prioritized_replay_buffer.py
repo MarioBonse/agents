@@ -42,7 +42,24 @@ from tf_agents.utils import common
 BufferInfo = collections.namedtuple('BufferInfo',
                                     ['ids', 'probabilities'])
 
-
+'''
+Un po' di note su come costruirlo:
+a) Il PRB avrà dei metodi self.get/set_priority che di fatto non fanno altro che far riferimento all'oggetto
+  self.sum_tree.get/set_priority. Vedi implementazione DeepMind in prioritized_replay_memory.py che mi sembra 
+  sia abbastanza copia-incollabile. 
+b) Il PRB ha due situazioni diverse in cui assegna la priorità alle transizioni (con cui poi estrae):
+    1) Quando una transizione è appena aggiunta essa riceve una priorità di default (massima). Quindi dentro
+        il metodo add_batch (chiamato dal driver) avremmo del codice simile al seguente:
+        ...
+        indices = self.add_transitions(batch)        # forse per questo si usa self.table_fn
+        self.set_priority(indices, DEFAULT_PRIORITY)  # DEFAUL_PRIORITY=100 in implementazione DeepMind
+        ...
+    2) Quando una transizione viene rivista in training, la sua priority viene updatata a seconda
+        di quale sia la sua loss. Dobbiamo decidere/capire se fare questo dentro la funzione training 
+        dell'agente o fuori usando la loss che ci viene ritornata... Io sarei a favore di farla dentro
+        la funzione training passando il PRB (o un suo metodo self.update_priority()) all'agent.
+        Leggi però le mie note sul training in cima (dopo gli import) al file eager_main.py
+'''
 @gin.configurable
 class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
   """A TFUniformReplayBuffer with batched adds and uniform sampling."""
