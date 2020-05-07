@@ -181,6 +181,52 @@ class AverageReturnMetric(tf_metric.TFStepMetric):
     self._return_accumulator.assign(tf.zeros_like(self._return_accumulator))
 
 
+class HanabiAverageReturnMetric(tf_metric.TFStepMetric):
+  """Metric to compute the average return."""
+
+  def __init__(self,
+               name='AverageReturn',
+               prefix='Metrics',
+               dtype=tf.float32,
+               batch_size=1,
+               buffer_size=10):
+    super(AverageReturnMetric, self).__init__(name=name, prefix=prefix)
+    self._buffer = TFDeque(buffer_size, dtype)
+    self._dtype = dtype
+    self._return_accumulator = common.create_variable(
+        initial_value=0, dtype=dtype, shape=(batch_size,), name='Accumulator')
+
+  @common.function(autograph=True)
+  def call(self, trajectory):
+    # Zero out batch indices where a new episode is starting.
+    self._return_accumulator.assign(
+        tf.where(trajectory.is_first(), tf.zeros_like(self._return_accumulator),
+                 self._return_accumulator))
+
+    # Update accumulator with received rewards.
+    print('\n\n\n\n', trajectory.reward)
+    print(type(trajectory.reward))
+    tf.print('\n\n\n\n', trajectory.reward)
+    tf.print(type(trajectory.reward))
+    if not (trajectory.is_last() and trajectory.reward):
+      self._return_accumulator.assign_add(trajectory.reward)
+
+    # Add final returns to buffer.
+    last_episode_indices = tf.squeeze(tf.where(trajectory.is_last()), axis=-1)
+    for indx in last_episode_indices:
+      self._buffer.add(self._return_accumulator[indx])
+
+    return trajectory
+
+  def result(self):
+    return self._buffer.mean()
+
+  @common.function
+  def reset(self):
+    self._buffer.clear()
+    self._return_accumulator.assign(tf.zeros_like(self._return_accumulator))
+
+
 class AverageEpisodeLengthMetric(tf_metric.TFStepMetric):
   """Metric to compute the average episode length."""
 
