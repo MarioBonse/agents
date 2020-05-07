@@ -49,8 +49,11 @@ a) Il PRB avrà dei metodi self.get/set_priority che di fatto non fanno altro ch
   self.sum_tree.get/set_priority. Vedi implementazione DeepMind in prioritized_replay_memory.py che mi sembra 
   sia abbastanza copia-incollabile. 
 b) Il PRB ha due situazioni diverse in cui assegna la priorità alle transizioni (con cui poi estrae):
-    1) Quando una transizione è appena aggiunta essa riceve una priorità di default (massima). Quindi dentro
-        il metodo add_batch (chiamato dal driver) avremmo del codice simile al seguente:
+    1) Quando una transizione è appena aggiunta essa riceve una priorità di default (massima). Nota
+        che un massimo per la priority non esiste visto che a regime essa dipende dalla loss (e quindi TD error)
+        e quella può essere arbitraria... L'idea è di mettere un valore decisamente più alto di qualsiasi valore
+        che la loss possa mai ragionevolmente ottenere.
+        Quindi dentro il metodo add_batch (chiamato dal driver) avremmo del codice simile al seguente:
         ...
         indices = self.add_transitions(batch)        # forse per questo si usa self.table_fn
         self.set_priority(indices, DEFAULT_PRIORITY)  # DEFAUL_PRIORITY=100 in implementazione DeepMind
@@ -66,6 +69,12 @@ b) Il PRB ha due situazioni diverse in cui assegna la priorità alle transizioni
         ...
 c) Il metodo self.get_priority sarà utilizzato nel metodo self.get_next() che genera il dataset
     così da drigli come samplare.
+d) Per samplare c'è il comodissimo metodo sample() di sum_tree che ti ritorna un indice basato sulle priority.
+  nell'implementazione di DeepMind non fanno altro che chiamare questo metodo batch_size-volte (vedere prioritized_replay_memory.py
+  a sample_index_batch()). Penso che questa implementazione sia però un pelo diversa da quella del paper che introdusse PRB.
+  Se non sbaglio infatti nel paper originale il range [0, sum_of_priorities] viene diviso in batch_size sotto-intervalli di pari
+  grandezza e si sampla a caso da ciascuno. Nell'implementazione DeepMind invece samplano direttamente con weight basato sulla priority...
+  Non penso cambi molto e probabilmente chi se ne frega, quelli di DeepMind sapranno quello che fanno no?
         
 
 Open Problems:
