@@ -208,6 +208,7 @@ class HanabiAverageReturnMetric(tf_metric.TFStepMetric):
     print(type(trajectory.reward))
     tf.print('\n\n\n\n', trajectory.reward)
     tf.print(type(trajectory.reward))
+    x = allo
     if not (trajectory.is_last() and trajectory.reward):
       self._return_accumulator.assign_add(trajectory.reward)
 
