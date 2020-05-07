@@ -185,7 +185,7 @@ class HanabiAverageReturnMetric(tf_metric.TFStepMetric):
   """Metric to compute the average return."""
 
   def __init__(self,
-               name='AverageReturn',
+               name='HanabiAverageReturn',
                prefix='Metrics',
                dtype=tf.float32,
                batch_size=1,
@@ -204,12 +204,7 @@ class HanabiAverageReturnMetric(tf_metric.TFStepMetric):
                  self._return_accumulator))
 
     # Update accumulator with received rewards.
-    print('\n\n\n\n', trajectory.reward)
-    print(type(trajectory.reward))
-    tf.print('\n\n\n\n', trajectory.reward)
-    tf.print(type(trajectory.reward))
-    x = allo
-    if not (trajectory.is_last() and trajectory.reward):
+    if not (trajectory.is_last() and trajectory.reward < 0):
       self._return_accumulator.assign_add(trajectory.reward)
 
     # Add final returns to buffer.
