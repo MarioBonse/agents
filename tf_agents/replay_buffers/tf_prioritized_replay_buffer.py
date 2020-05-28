@@ -255,7 +255,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       tf.print('Executing Eagerly:', tf.executing_eagerly())
       tf.print(write_rows)
       tf.print(type(write_rows))
-      self.sum_tree.set(write_rows, DEFAUL_PRIORITY)
+      self.sum_tree.set(write_rows, DEFAULT_PRIORITY)
       write_id_op = self._id_table.write(write_rows, id_)
       write_data_op = self._data_table.write(write_rows, items)
       return tf.group(write_id_op, write_data_op)
