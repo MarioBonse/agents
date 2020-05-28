@@ -37,8 +37,10 @@ from tf_agents.replay_buffers import replay_buffer
 from tf_agents.replay_buffers import table
 from tf_agents.specs import tensor_spec
 from tf_agents.utils import common
+from tf_agents.replay_buffers import sum_tree
 
 
+DEFAULT_PRIORITY = 100.0          # copied from DeepMind implementation
 BufferInfo = collections.namedtuple('BufferInfo',
                                     ['ids', 'probabilities'])
 
@@ -60,15 +62,22 @@ b) Il PRB ha due situazioni diverse in cui assegna la priorità alle transizioni
         ...
     2) Quando una transizione viene rivista in training, la sua priority viene updatata a seconda
         di quale sia la sua loss. Dobbiamo decidere/capire se fare questo dentro la funzione training 
-        dell'agente o fuori usando la loss che ci viene ritornata... Io sarei a favore di farla dentro
-        la funzione training passando il PRB (o un suo metodo self.update_priority()) all'agent.
+        dell'agente o fuori usando la loss che ci viene ritornata... Io sarei a favore di farla fuori
+        in modo da non dover cambiare la struttura della funzione train dell'agent. Questo però è 
+        possibile solo se l'output della funzione train dell'agent è abbastanza informativo... Penso
+        che lo sia anche perchè non è solo un float, ma un'oggetto loss_info più strutturato. Se per caso
+        però non fosse abbastanza informativa allora bisogna farlo dentro la funzione train dell'agent
+        passando il PRB (o un suo metodo self.update_priority()) all'agent (o alla funzione train)
         Leggi però le mie note sul training in cima (dopo gli import) al file eager_main.py
         Il codice per fare sta cosa sarà una roba del tipo:
         ...(esegui training e prendi la loss)
-        PRB.set_priority(indices, loss)
+        PRB.update_priority(indices, loss)
         ...
-c) Il metodo self.get_priority sarà utilizzato nel metodo self.get_next() che genera il dataset
-    così da drigli come samplare.
+c) Il metodo self.get_priority sembra per il momento essere inutile. O meglio non viene chiamato da nessun altro metodo
+    della classe e probabilmente serve solo a fini di debugging/ se per qualche altra ragione vuoi sapere qual è la 
+    priority di qualcosa... Il metodo self._get_next (utilizzato per generare il dataset) in realtà sampla chiedendo gli
+    indici direttamente all'oggetto sumtree, quindi il replay buffer di per sé non è mai interessato a sapere quali sono
+    le priorities.... Quelle sono conosciute dal sum tree e il RB si accontenta di avere i sample estratti con quelle priority
 d) Per samplare c'è il comodissimo metodo sample() di sum_tree che ti ritorna un indice basato sulle priority.
   nell'implementazione di DeepMind non fanno altro che chiamare questo metodo batch_size-volte (vedere prioritized_replay_memory.py
   a sample_index_batch()). Penso che questa implementazione sia però un pelo diversa da quella del paper che introdusse PRB.
@@ -99,15 +108,15 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
                data_spec,
                batch_size,
                max_length=1000,
-               scope='TFUniformReplayBuffer',
+               scope='TFPrioritizedReplayBuffer',
                device='cpu:*',
                table_fn=table.Table,
                dataset_drop_remainder=False,
                dataset_window_shift=None,
                stateful_dataset=False):
-    """Creates a TFUniformReplayBuffer.
+    """Creates a TFPrioritizedReplayBuffer.
 
-    The TFUniformReplayBuffer stores episodes in `B == batch_size` blocks of
+    The TFPrioritizedReplayBuffer stores episodes in `B == batch_size` blocks of
     size `L == max_length`, with total frame capacity
     `C == L * B`.  Storage looks like:
 
@@ -182,7 +191,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     self._batch_size = batch_size
     self._max_length = max_length
     capacity = self._batch_size * self._max_length
-    super(TFUniformReplayBuffer, self).__init__(
+    super(TFPrioritizedReplayBuffer, self).__init__(
         data_spec, capacity, stateful_dataset)
 
     self._id_spec = tensor_spec.TensorSpec([], dtype=tf.int64, name='id')
@@ -194,6 +203,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     self._table_fn = table_fn
     self._dataset_drop_remainder = dataset_drop_remainder
     self._dataset_window_shift = dataset_window_shift
+    self.sum_tree = sum_tree.SumTree(self._capacity_value)
     with tf.device(self._device), tf.compat.v1.variable_scope(self._scope):
       self._capacity = tf.constant(capacity, dtype=tf.int64)
       self._data_table = table_fn(self._data_spec, self._capacity_value)
@@ -242,6 +252,10 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     with tf.device(self._device), tf.name_scope(self._scope):
       id_ = self._increment_last_id()
       write_rows = self._get_rows_for_id(id_)
+      tf.print('Executing Eagerly:', tf.executing_eagerly())
+      tf.print(write_rows)
+      tf.print(type(write_rows))
+      self.sum_tree.set(write_rows, DEFAUL_PRIORITY)
       write_id_op = self._id_table.write(write_rows, id_)
       write_data_op = self._data_table.write(write_rows, items)
       return tf.group(write_id_op, write_data_op)
@@ -283,7 +297,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
         assert_nonempty = tf.compat.v1.assert_greater(
             max_val,
             min_val,
-            message='TFUniformReplayBuffer is empty. Make sure to add items '
+            message='TFPrioritizedReplayBuffer is empty. Make sure to add items '
             'before sampling the buffer.')
         with tf.control_dependencies([assert_nonempty]):
           num_ids = max_val - min_val
@@ -335,13 +349,13 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     return data, buffer_info
 
   @gin.configurable(
-      'tf_agents.tf_uniform_replay_buffer.TFUniformReplayBuffer.as_dataset')
+      'tf_agents.tf_prioritized_replay_buffer.TFPrioritizedReplayBuffer.as_dataset')
   def as_dataset(self,
                  sample_batch_size=None,
                  num_steps=None,
                  num_parallel_calls=None,
                  single_deterministic_pass=False):
-    return super(TFUniformReplayBuffer, self).as_dataset(
+    return super(TFPrioritizedReplayBuffer, self).as_dataset(
         sample_batch_size, num_steps, num_parallel_calls,
         single_deterministic_pass=single_deterministic_pass)
 
@@ -567,6 +581,31 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     id_mod = tf.math.mod(id_, self._max_length)
     rows = self._batch_offsets + id_mod
     return rows
+  
+  def get_priority(self, indices, sample_batch_size=None):
+    """Fetches the priorities correspond to a batch of memory indices.
+
+    For any memory location not yet used, the corresponding priority is 0.
+
+    Args:
+      indices: `np.array` of indices in range [0, replay_capacity).
+      batch_size: int, requested number of items.
+    Returns:
+      The corresponding priorities.
+    """
+    if sample_batch_size is None:
+      sample_batch_size = 1
+    #if batch_size != self._state_batch.shape[0]:
+    #  self.reset_state_batch_arrays(batch_size)
+
+    priority_batch = np.empty((sample_batch_size), dtype=np.float32)
+
+    assert indices.dtype == np.int32, ('Indices must be integers, '
+                                       'given: {}'.format(indices.dtype))
+    for i, memory_index in enumerate(indices):
+      priority_batch[i] = self.sum_tree.get(memory_index)
+
+    return priority_batch
 
 
 def _valid_range_ids(last_id, max_length, num_steps=None):
