@@ -72,7 +72,7 @@ class SumTree(object):
     Raises:
       ValueError: If requested capacity is not positive.
     """
-    assert isinstance(capacity, int)
+    assert isinstance(capacity, (int, np.int64, np.int32))
     if capacity <= 0:
       raise ValueError('Sum tree capacity should be positive. Got: {}'.
                        format(capacity))
