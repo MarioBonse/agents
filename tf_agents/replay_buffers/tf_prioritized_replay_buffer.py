@@ -63,16 +63,15 @@ b) Il PRB ha due situazioni diverse in cui assegna la priorità alle transizioni
     2) Quando una transizione viene rivista in training, la sua priority viene updatata a seconda
         di quale sia la sua loss. Dobbiamo decidere/capire se fare questo dentro la funzione training 
         dell'agente o fuori usando la loss che ci viene ritornata... Io sarei a favore di farla fuori
-        in modo da non dover cambiare la struttura della funzione train dell'agent. Questo però è 
-        possibile solo se l'output della funzione train dell'agent è abbastanza informativo... Penso
-        che lo sia anche perchè non è solo un float, ma un'oggetto loss_info più strutturato. Se per caso
-        però non fosse abbastanza informativa allora bisogna farlo dentro la funzione train dell'agent
-        passando il PRB (o un suo metodo self.update_priority()) all'agent (o alla funzione train)
+        in modo da non dover cambiare la struttura della funzione train dell'agent. Questo è certamente
+        possibile perchè gli elementi del dataset contengono le informazioni aggiuntive necessarie 
+        (id che sono stati samplati)
         Leggi però le mie note sul training in cima (dopo gli import) al file eager_main.py
         Il codice per fare sta cosa sarà una roba del tipo:
         ...(esegui training e prendi la loss)
         PRB.update_priority(indices, loss)
         ...
+        Il metodo update priority passerà la loss a SumTree a occhio
 c) Il metodo self.get_priority sembra per il momento essere inutile. O meglio non viene chiamato da nessun altro metodo
     della classe e probabilmente serve solo a fini di debugging/ se per qualche altra ragione vuoi sapere qual è la 
     priority di qualcosa... Il metodo self._get_next (utilizzato per generare il dataset) in realtà sampla chiedendo gli
