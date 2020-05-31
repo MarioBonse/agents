@@ -126,6 +126,11 @@ Notes on Prioritized Replay Buffer differences compared from "normal" Replay Buf
 #FIXME It is unclear whether the SumTree associated with the PRB actually gets saved by checkpointer objects or not... I'd venture
 # to say that it doesn't, especially since it isn't even written in TF code... Might raise an error when attempting to save 
 # (needs to be tested) or might have unexpected behaviour when loading. Do not trust checkpoints basically
+#TODO convert all code in sample_ids_batch (and all functions called by it) into TF 2.x compliant code. Note that this includes
+# rewriting the entire SumTree data structure to be TF 2.x compliant. Connected to this is the function update_priority because a batch
+# of samples might well have twice the same sample and then you would have two different (possibly, I'm not sure) priorities trying to 
+# be assigned to the same item... That function should probably stay in non-TF 2.x code or (more simply) should enforce eager execution 
+# to update priorities sequentially and NOT at the same time
 @gin.configurable
 class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
   """A TFUniformReplayBuffer with batched adds and uniform sampling."""
