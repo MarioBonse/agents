@@ -678,7 +678,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       num_steps = tf.constant(1, tf.int64)
 
     # Range checks
-    is_in_range = tf.math.logical_and(tf.math.less(0, index), tf.math.less(self._max_length, index))
+    is_in_range = tf.math.logical_and(tf.math.less(tf.constant(0, tf.int64), index),
+                                      tf.math.less(self._max_length, index))
     #if index < 0 or index >= self._max_length:
     #  raise RuntimeError("Why did this case occur? SumTree isn't supposed to return this index: {}".format(index))
     #  return False
