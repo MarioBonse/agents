@@ -202,6 +202,9 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
         is the appropriate value.
       stateful_dataset: whether the dataset contains stateful ops or not.
     """
+    if batch_size != 1:
+      raise RuntimeError("Prioritized RB doesn't support batch_size != 1.\n"
+                          "See comments in the code above this class for more info.")
     self._batch_size = batch_size
     self._max_length = max_length
     capacity = self._batch_size * self._max_length
