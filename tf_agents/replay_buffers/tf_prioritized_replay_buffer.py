@@ -643,10 +643,10 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
        A TF op sampling a batch according to Prioritized Experience Replay.
     """
 
-    return tf.py_func(self._sample_ids_batch, 
-                      [sample_batch_size, num_steps],
-                      [tf.int64, tf.float64],
-                      name='TFPrioritizedReplayBuffer_sample_ids_batch_py_func')
+    return tf.py_function(self._sample_ids_batch, 
+                          [sample_batch_size, num_steps],
+                          [tf.int64, tf.float64],
+                          name='TFPrioritizedReplayBuffer_sample_ids_batch_py_func')
   
   # Copied from DeepMind's implementation (with adjustments)
   def _sample_ids_batch(self, sample_batch_size=None, num_steps=None):
