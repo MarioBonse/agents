@@ -630,7 +630,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     return priority_batch
   
   # Copied from DeepMind's implementation (with adjustments)
-  @tf.function
   def sample_ids_batch(self, sample_batch_size=None, num_steps=None):
     """Returns a batch of valid indices.
 
@@ -657,6 +656,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     return tf.convert_to_tensor(indices), tf.convert_to_tensor(probabilities)
   
   # Copied from DeepMind's implementation (with heavy adjustments)
+  @tf.function
   def is_valid_transition(self, index, num_steps=None):
     """Checks if the index contains a valid trajoctory.
 
