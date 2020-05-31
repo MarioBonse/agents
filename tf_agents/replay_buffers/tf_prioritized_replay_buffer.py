@@ -123,6 +123,9 @@ Notes on Prioritized Replay Buffer differences compared from "normal" Replay Buf
       1) The trajectory stored at id=max_length-1 should be followed by trajectory at id=0
       2) (for num_steps=2) The last trajectory added shouldn't be sampled since it doesn't have the required next trajectories.
 """
+#FIXME It is unclear whether the SumTree associated with the PRB actually gets saved by checkpointer objects or not... I'd venture
+# to say that it doesn't, especially since it isn't even written in TF code... Might raise an error when attempting to save 
+# (needs to be tested) or might have unexpected behaviour when loading. Do not trust checkpoints basically
 @gin.configurable
 class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
   """A TFUniformReplayBuffer with batched adds and uniform sampling."""
