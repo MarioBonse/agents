@@ -678,13 +678,15 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       num_steps = tf.constant(1, tf.int64)
 
     # Range checks
-    if index < 0 or index >= self._max_length:
-      raise RuntimeError("Why did this case occur? SumTree isn't supposed to return this index: {}".format(index))
-      return False
-    
-    # The trajectory and the following steps must be smaller than last_id_added
-    if (last_id_added - num_steps + 1) < index < last_id_added + 1:
-      return False
+    is_in_range = tf.math.logical_and(tf.math.less(0, index), tf.math.less(self._max_length, index))
+    #if index < 0 or index >= self._max_length:
+    #  raise RuntimeError("Why did this case occur? SumTree isn't supposed to return this index: {}".format(index))
+    #  return False
+    check_op = tf.Assert(is_in_range, ["SumTree isn't supposed to return this index", index])
 
-    return True
+    # The trajectory and the following steps must be smaller than last_id_added
+    is_valid = tf.math.logical_and(tf.math.less((last_id_added - num_steps + 1), index),
+                                   tf.math.less(index, last_id_added + 1))
+    
+    return is_valid
 
