@@ -710,7 +710,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     #upper_bound = tf.cast(last_id_added + 1, tf.int64)
 
     #is_valid = tf.math.logical_and(tf.math.less(lower_bound, index),
-                                   tf.math.less(index, upper_bound))
+    #                               tf.math.less(index, upper_bound))
 
     if last_id_added - num_steps + 1 < index < last_id_added + 1:
       return False
