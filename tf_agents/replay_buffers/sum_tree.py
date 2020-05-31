@@ -138,7 +138,9 @@ class SumTree(object):
         # Adjust query to be relative to right subtree.
         query_value -= left_sum
 
-    return node_index
+    probability = self.nodes[-1][node_index] / self._total_priority()
+
+    return node_index, probability
 
   def stratified_sample(self, batch_size):
     """Performs stratified sampling using the sum tree.

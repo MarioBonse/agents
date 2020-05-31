@@ -116,7 +116,12 @@ Notes on Prioritized Replay Buffer differences compared from "normal" Replay Buf
     - If you wanted to make the Prioritized Replay Buffer batch-compliant also be careful about how indices are managed between
       batches; i.e. if max_length = 100 and batch_size = 2, then the transition at index 99 in data_table definetly isn't followed
       by the one at index 100. This is because index 100 actually corresponds to index 0 in the second batch. Looking closely at  
-      Uniform Replay Buffer's "_get_next" code might help to understand better how to deal with this and other fringe cases. 
+      Uniform Replay Buffer's "_get_next" code might help to understand better how to deal with this and other fringe cases.
+  - The SumTree already implicitly makes sure that memory which hasn't been filled isn't accessed (their priority is 0). Therefore
+    the only thing to keep track of when sampling is the case in which the memory has already gone over max_length and has started
+    substituing old trajectories. In this case there are two things to do right:
+      1) The trajectory stored at id=max_length-1 should be followed by trajectory at id=0
+      2) (for num_steps=2) The last trajectory added shouldn't be sampled since it doesn't have the required next trajectories.
 """
 @gin.configurable
 class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
@@ -309,29 +314,14 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     """
     with tf.device(self._device), tf.name_scope(self._scope):
       with tf.name_scope('get_next'):
-        min_val, max_val = _valid_range_ids(
-            self._get_last_id(), self._max_length, num_steps)
         rows_shape = () if sample_batch_size is None else (sample_batch_size,)
-        assert_nonempty = tf.compat.v1.assert_greater(
-            max_val,
-            min_val,
-            message='TFPrioritizedReplayBuffer is empty. Make sure to add items '
+        assert_nonempty = tf.debugging.assert_greater(
+          self._get_last_id(),
+          0,
+          message='TFPrioritizedReplayBuffer is empty. Make sure to add items '
             'before sampling the buffer.')
         with tf.control_dependencies([assert_nonempty]):
-          num_ids = max_val - min_val
-          probability = tf.cond(
-              pred=tf.equal(num_ids, 0),
-              true_fn=lambda: 0.,
-              false_fn=lambda: 1. / tf.cast(num_ids * self._batch_size,  # pylint: disable=g-long-lambda
-                                            tf.float32))
-          ids = tf.random.uniform(
-              rows_shape, minval=min_val, maxval=max_val, dtype=tf.int64)
-
-        # Move each id sample to a random batch.
-        batch_offsets = tf.random.uniform(
-            rows_shape, minval=0, maxval=self._batch_size, dtype=tf.int64)
-        batch_offsets *= self._max_length
-        ids += batch_offsets
+          ids, probabilities = self.sample_ids_batch(sample_batch_size, num_steps)
 
         if num_steps is None:
           rows_to_get = tf.math.mod(ids, self._capacity)
@@ -360,7 +350,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
               data_ids.append(self._id_table.read(steps_to_get))
             data = tuple(data)
             data_ids = tuple(data_ids)
-        probabilities = tf.fill(rows_shape, probability)
 
         buffer_info = BufferInfo(ids=data_ids,
                                  probabilities=probabilities)
@@ -600,6 +589,20 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     rows = self._batch_offsets + id_mod
     return rows
   
+  # Copied from DeepMind's implementation
+  def set_priority(self, indices, priorities):
+    """Sets the priority of the given elements according to Schaul et al.
+
+    Args:
+      indices: `np.array` of indices in range [0, replay_capacity).
+      priorities: list of floats, the corresponding priorities.
+    """
+    assert indices.dtype == np.int32, ('Indices must be integers, '
+                                       'given: {}'.format(indices.dtype))
+    for i, memory_index in enumerate(indices):
+      self.sum_tree.set(memory_index, priorities[i])
+  
+  # Copied from DeepMind's implementation (with minor adjustments)
   def get_priority(self, indices, sample_batch_size=None):
     """Fetches the priorities correspond to a batch of memory indices.
 
@@ -607,14 +610,12 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 
     Args:
       indices: `np.array` of indices in range [0, replay_capacity).
-      batch_size: int, requested number of items.
+      sample_batch_size: int, requested number of items.
     Returns:
       The corresponding priorities.
     """
     if sample_batch_size is None:
       sample_batch_size = 1
-    #if batch_size != self._state_batch.shape[0]:
-    #  self.reset_state_batch_arrays(batch_size)
 
     priority_batch = np.empty((sample_batch_size), dtype=np.float32)
 
@@ -624,28 +625,63 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       priority_batch[i] = self.sum_tree.get(memory_index)
 
     return priority_batch
+  
+  # Copied from DeepMind's implementation (with adjustments)
+  def sample_ids_batch(self, sample_batch_size=None, num_steps=None):
+    """Returns a batch of valid indices.
 
+    Args:
+      sample_batch_size: (Optional.) An optional batch_size to specify the
+        number of items to return. See get_next() documentation.
+      num_steps: (Optional.)  Optional way to specify that sub-episodes are
+        desired. See get_next() documentation.
 
-def _valid_range_ids(last_id, max_length, num_steps=None):
-  """Returns the [min_val, max_val) range of ids.
+    Returns:
+      Tensors of shape (sample_batch_size,) containing valid indices and
+      corresponding sampling probabilities.
+    """
+    indices = []
+    probabilities = []
 
-  When num_steps is provided, [min_val, max_val+num_steps) are also valid ids.
+    while len(indices) < sample_batch_size and allowed_attempts > 0:
+      index, probability = self.sum_tree.sample()
 
-  Args:
-    last_id: The last id added to the buffer.
-    max_length: The max length of each batch segment in the buffer.
-    num_steps: Optional way to specify that how many ids need to be valid.
-  Returns:
-    A tuple (min_id, max_id) for the range [min_id, max_id) of valid ids.
-  """
-  if num_steps is None:
-    num_steps = tf.constant(1, tf.int64)
+      if self.is_valid_transition(index):
+        indices.append(index)
+        probabilities.append(probability)
 
-  min_id_not_full = tf.constant(0, dtype=tf.int64)
-  max_id_not_full = tf.maximum(last_id + 1 - num_steps + 1, 0)
+    return tf.convert_to_tensor(indices), tf.convert_to_tensor(probabilities)
+  
+  # Copied from DeepMind's implementation (with heavy adjustments)
+  def is_valid_transition(self, index, num_steps=None):
+    """Checks if the index contains a valid trajoctory.
 
-  min_id_full = last_id + 1 - max_length
-  max_id_full = last_id + 1 - num_steps + 1
+    The index range needs to be valid
 
-  return (tf.where(last_id < max_length, min_id_not_full, min_id_full),
-          tf.where(last_id < max_length, max_id_not_full, max_id_full))
+    Args:
+      index: int, index to the trajoctory in self._data_table. Note that following trajectories
+        (if num_steps != None) must also be valid.
+      sample_batch_size: (Optional.) An optional batch_size to specify the
+        number of items to return. See get_next() documentation.
+      num_steps: (Optional.)  Optional way to specify that sub-episodes are
+        desired. See get_next() documentation.
+
+    Returns:
+      bool, True if trajoctory is valid.
+
+    """
+    last_id_added = tf.math.mod(self._get_last_id(), self._max_length)
+    if num_steps is None:
+      num_steps = tf.constant(1, tf.int64)
+
+    # Range checks
+    if index < 0 or index >= self._max_length:
+      raise RuntimeError("Why did this case occur? SumTree isn't supposed to return this index: {}".format(index))
+      return False
+    
+    # The trajectory and the following steps must be smaller than last_id_added
+    if (last_id_added - num_steps + 1) < index < last_id_added + 1:
+      return False
+
+    return True
+
