@@ -672,7 +672,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
         indices.append(index)
         probabilities.append(probability)
 
-    return tf.convert_to_tensor(indices), tf.convert_to_tensor(probabilities)
+    return tf.convert_to_tensor(indices, tf.int64), tf.convert_to_tensor(probabilities, tf.float64)
 
   # Copied from DeepMind's implementation (with heavy adjustments)
   def is_valid_transition(self, index, num_steps=None):
