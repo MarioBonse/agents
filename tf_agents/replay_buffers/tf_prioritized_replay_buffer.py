@@ -629,8 +629,27 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 
     return priority_batch
   
-  # Copied from DeepMind's implementation (with adjustments)
   def sample_ids_batch(self, sample_batch_size=None, num_steps=None):
+    """
+    eturns a batch of valid indices.
+
+    Args:
+      sample_batch_size: (Optional.) An optional batch_size to specify the
+        number of items to return. See get_next() documentation.
+      num_steps: (Optional.)  Optional way to specify that sub-episodes are
+        desired. See get_next() documentation.
+
+    Returns:
+       A TF op sampling a batch according to Prioritized Experience Replay.
+    """
+
+    return tf.py_func(self._sample_ids_batch, 
+                      [sample_batch_size, num_steps],
+                      [tf.int64, tf.float64],
+                      name='TFPrioritizedReplayBuffer_sample_ids_batch_py_func')
+  
+  # Copied from DeepMind's implementation (with adjustments)
+  def _sample_ids_batch(self, sample_batch_size=None, num_steps=None):
     """Returns a batch of valid indices.
 
     Args:
@@ -654,7 +673,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
         probabilities.append(probability)
 
     return tf.convert_to_tensor(indices), tf.convert_to_tensor(probabilities)
-  
+
   # Copied from DeepMind's implementation (with heavy adjustments)
   def is_valid_transition(self, index, num_steps=None):
     """Checks if the index contains a valid trajoctory.
@@ -679,26 +698,22 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       num_steps = tf.constant(1, tf.int64)
 
     # Range checks
-    is_in_range = tf.math.logical_and(tf.math.less(tf.constant(0, tf.int64), index),
-                                      tf.math.less(self._max_length, index))
-    #if index < 0 or index >= self._max_length:
-    #  raise RuntimeError("Why did this case occur? SumTree isn't supposed to return this index: {}".format(index))
-    #  return False
-    check_op = tf.Assert(is_in_range, ["SumTree isn't supposed to return this index", index])
+    #is_in_range = tf.math.logical_and(tf.math.less(tf.constant(0, tf.int64), index),
+    #                                  tf.math.less(self._max_length, index))
+    if index < 0 or index >= self._max_length:
+      raise RuntimeError("Why did this case occur? SumTree isn't supposed to return this index: {}".format(index))
+      return False
+    #check_op = tf.Assert(is_in_range, ["SumTree isn't supposed to return this index", index])
 
     # The trajectory and the following steps must be smaller than last_id_added
-    lower_bound = tf.cast(last_id_added - num_steps + 1, tf.int64)
-    upper_bound = tf.cast(last_id_added + 1, tf.int64)
-    print(lower_bound.dtype)
-    tf.print(lower_bound.dtype)
-    print(upper_bound.dtype)
-    tf.print(upper_bound.dtype)
+    #lower_bound = tf.cast(last_id_added - num_steps + 1, tf.int64)
+    #upper_bound = tf.cast(last_id_added + 1, tf.int64)
 
-    is_valid = tf.math.logical_and(tf.math.less(lower_bound, index),
+    #is_valid = tf.math.logical_and(tf.math.less(lower_bound, index),
                                    tf.math.less(index, upper_bound))
 
-    #if last_id_added - num_steps + 1 < index < last_id_added + 1:
-    #  return False
+    if last_id_added - num_steps + 1 < index < last_id_added + 1:
+      return False
     
-    return is_valid
+    return True
 
