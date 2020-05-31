@@ -630,6 +630,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     return priority_batch
   
   # Copied from DeepMind's implementation (with adjustments)
+  @tf.function
   def sample_ids_batch(self, sample_batch_size=None, num_steps=None):
     """Returns a batch of valid indices.
 
@@ -686,8 +687,11 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     check_op = tf.Assert(is_in_range, ["SumTree isn't supposed to return this index", index])
 
     # The trajectory and the following steps must be smaller than last_id_added
-    is_valid = tf.math.logical_and(tf.math.less(tf.cast(last_id_added - num_steps + 1, tf.int64), index),
-                                   tf.math.less(index, tf.cast(last_id_added + 1, tf.int64)))
+    #is_valid = tf.math.logical_and(tf.math.less(tf.cast(last_id_added - num_steps + 1, tf.int64), index),
+    #                               tf.math.less(index, tf.cast(last_id_added + 1, tf.int64)))
+
+    if last_id_added - num_steps + 1 < index < last_id_added + 1:
+      return False
     
-    return is_valid
+    return True
 
