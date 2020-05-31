@@ -689,6 +689,11 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     # The trajectory and the following steps must be smaller than last_id_added
     lower_bound = tf.cast(last_id_added - num_steps + 1, tf.int64)
     upper_bound = tf.cast(last_id_added + 1, tf.int64)
+    print(lower_bound.dtype)
+    tf.print(lower_bound.dtype)
+    print(upper_bound.dtype)
+    tf.print(upper_bound.dtype)
+
     is_valid = tf.math.logical_and(tf.math.less(lower_bound, index),
                                    tf.math.less(index, upper_bound))
 
