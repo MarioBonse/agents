@@ -317,7 +317,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
         rows_shape = () if sample_batch_size is None else (sample_batch_size,)
         assert_nonempty = tf.debugging.assert_greater(
           self._get_last_id(),
-          0,
+          tf.constant(0, tf.int64),
           message='TFPrioritizedReplayBuffer is empty. Make sure to add items '
             'before sampling the buffer.')
         with tf.control_dependencies([assert_nonempty]):
