@@ -692,7 +692,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       bool, True if trajoctory is valid.
 
     """
-    print('Function is being traced by tf.function (supposedly)')
     last_id_added = tf.math.mod(self._get_last_id(), self._max_length)
     if num_steps is None:
       num_steps = tf.constant(1, tf.int64)
