@@ -643,7 +643,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     indices = []
     probabilities = []
 
-    while len(indices) < sample_batch_size and allowed_attempts > 0:
+    while len(indices) < sample_batch_size:
       index, probability = self.sum_tree.sample()
 
       if self.is_valid_transition(index):
