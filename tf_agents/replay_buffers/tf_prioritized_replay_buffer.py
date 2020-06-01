@@ -616,7 +616,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
                           name='TFPrioritizedReplayBuffer_set_priority_py_func')
     
   
-  def set_priority(self, indices, priorities)
+  def set_priority(self, indices, priorities):
   """Sets the priority of the given elements according to Schaul et al.
 
     Args:
