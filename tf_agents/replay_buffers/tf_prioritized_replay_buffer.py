@@ -423,6 +423,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
         `sample_batch_size > self.batch_size`.  In this case all data will
         be dropped.
     """
+    raise RuntimeError("This method is just a copy of what was in TFUniformReplayBuffer "
+                        "and its implementation hasn't been updated for TFPrioritizedReplayBuffer.")
     static_size = tf.get_static_value(sample_batch_size)
     static_num_steps = tf.get_static_value(num_steps)
     static_self_batch_size = tf.get_static_value(self._batch_size)
@@ -564,6 +566,9 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     Returns:
       op that clears or unlinks the replay buffer contents.
     """
+    raise RuntimeError("This method is just a copy of what was in TFUniformReplayBuffer "
+                        "and its implementation hasn't been updated for TFPrioritizedReplayBuffer."
+                        " Specifically the SumTree object isn't resetted.")
     table_vars = self._data_table.variables() + self._id_table.variables()
     def _init_vars():
       assignments = [self._last_id.assign(-1)]
@@ -615,8 +620,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
                           [indices, priorities],
                           [],
                           name='TFPrioritizedReplayBuffer_set_priority_py_func')
-    
   
+  # Copied from DeepMind's implementation (with minor adjustments)
   def set_priority(self, indices, priorities):
     """Sets the priority of the given elements according to Schaul et al.
 
@@ -651,6 +656,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 
     return priority_batch
   
+  # Copied from DeepMind's implementation
   def tf_sample_ids_batch(self, sample_batch_size=None, num_steps=None):
     """
     Returns a batch of valid indices.
