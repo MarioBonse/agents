@@ -105,18 +105,18 @@ class ReplayBuffer(tf.Module):
       time_stacked: (Optional.) Boolean, when true and num_steps > 1 it returns
         the items stacked on the time dimension. See examples below for details.
       Examples of tensor shapes returned: (B = batch size, T = timestep, D =
-        data spec)  get_next(sample_batch_size=None, num_steps=None,
-        time_stacked=True)
+        data spec)  
+        get_next(sample_batch_size=None, num_steps=None,time_stacked=True)
           return shape (non-episodic): [D]
           return shape (episodic): [T, D] (T = full length of the episode)
-            get_next(sample_batch_size=B, num_steps=None, time_stacked=True)
+        get_next(sample_batch_size=B, num_steps=None, time_stacked=True)
           return shape (non-episodic): [B, D]
-          return shape (episodic): Not supported get_next(sample_batch_size=B,
-            num_steps=T, time_stacked=True)
-          return shape: [B, T, D] get_next(sample_batch_size=None, num_steps=T,
-            time_stacked=False)
+          return shape (episodic): Not supported 
+        get_next(sample_batch_size=B, num_steps=T, time_stacked=True)
+          return shape: [B, T, D] 
+        get_next(sample_batch_size=None, num_steps=T, time_stacked=False)
           return shape: ([D], [D], ..) T tensors in the tuple
-            get_next(sample_batch_size=B, num_steps=T, time_stacked=False)
+        get_next(sample_batch_size=B, num_steps=T, time_stacked=False)
           return shape: ([B, D], [B, D], ..) T tensors in the tuple
 
     Returns:
