@@ -711,7 +711,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
         indices.append(index)
         probabilities.append(probability)
       else:
-        print('yo')
         sampling_attemps_left -= 1
 
     if sampling_attemps_left == 0:
