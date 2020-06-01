@@ -40,7 +40,7 @@ from tf_agents.utils import common
 from tf_agents.replay_buffers import sum_tree
 
 
-DEFAULT_PRIORITY = 100.0          # copied from DeepMind implementation
+DEFAULT_PRIORITY = 100.0         # copied from DeepMind implementation
 BufferInfo = collections.namedtuple('BufferInfo',
                                     ['ids', 'probabilities'])
 
@@ -286,7 +286,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     with tf.device(self._device), tf.name_scope(self._scope):
       id_ = self._increment_last_id()
       write_rows = self._get_rows_for_id(id_)
-      default_priorities = tf.ones_like(write_rows)*DEFAULT_PRIORITY
+      default_priorities = tf.ones_like(write_rows, dtype=tf.float32)*DEFAULT_PRIORITY
       print('_add_batch')
       print(write_rows)
       print(default_priorities)
