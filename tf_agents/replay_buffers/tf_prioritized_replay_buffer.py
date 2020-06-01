@@ -628,7 +628,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     
   
   def set_priority(self, indices, priorities):
-  """Sets the priority of the given elements according to Schaul et al.
+    """Sets the priority of the given elements according to Schaul et al.
 
     Args:
       indices: `np.array` of indices in range [0, replay_capacity).
