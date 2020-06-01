@@ -322,8 +322,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     Raises:
       ValueError: if num_steps is bigger than the capacity.
     """
-    tf.print('Am I in _get_next? (tf)')
-    print('Am I in _get_next?')
     with tf.device(self._device), tf.name_scope(self._scope):
       with tf.name_scope('get_next'):
         rows_shape = () if sample_batch_size is None else (sample_batch_size,)
@@ -365,8 +363,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 
         buffer_info = BufferInfo(ids=data_ids,
                                  probabilities=probabilities)
-    tf.print('No _get_next (tf)')
-    print('No _get_next')
     return data, buffer_info
 
   @gin.configurable(
@@ -634,12 +630,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       indices: tensor of indices (int64), size k.
       priorities: tensor of priorities (float32), size k.
     """
-    tf.print('Am I in set_priority? (tf)')
-    print('Am I in set_priority?')
     for i, memory_index in enumerate(indices):
       self.sum_tree.set(memory_index, priorities[i])
-    tf.print('No set_priority (tf)')
-    print('No set_priority')
   
   # Copied from DeepMind's implementation (with minor adjustments)
   def get_priority(self, indices, sample_batch_size=None):
@@ -698,8 +690,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       Tensors of shape (sample_batch_size,) containing valid indices and
       corresponding sampling probabilities.
     """
-    tf.print('Am I in sample_ids_batch? (tf)')
-    print('Am I in sample_ids_batch?')
     indices = []
     probabilities = []
     sampling_attemps_left = MAXIMUM_SAMPLING_ATTEMPTS
@@ -718,9 +708,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
                           "Sampling attemps: {}"
                           "Batch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
                                                             sample_batch_size))
-
-    tf.print('No sample_ids_batch (tf)')
-    print('No sample_ids_batch')
 
     return tf.convert_to_tensor(indices, tf.int64), tf.convert_to_tensor(probabilities, tf.float32)
 
@@ -742,8 +729,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       bool, True if trajoctory is valid.
 
     """
-    tf.print('Am I in sample_ids_batch? (tf)')
-    print('Am I in sample_ids_batch?')
     last_id_added = tf.math.mod(self._get_last_id(), self._max_length)
     if num_steps is None:
       num_steps = tf.constant(1, tf.int64)
@@ -766,7 +751,5 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     if last_id_added - num_steps + 1 < index < last_id_added + 1:
       return False
     
-    tf.print('No is_valid_tranistion (tf)')
-    print('No is_valid_tranistion')
     return True
 
