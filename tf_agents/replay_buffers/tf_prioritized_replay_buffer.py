@@ -287,11 +287,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       id_ = self._increment_last_id()
       write_rows = self._get_rows_for_id(id_)
       default_priorities = tf.ones_like(write_rows, dtype=tf.float32)*DEFAULT_PRIORITY
-      print('_add_batch')
-      print(write_rows)
-      print(default_priorities)
-      print(type(write_rows))
-      print(type(default_priorities))
       self.tf_set_priority(write_rows, default_priorities)
       write_id_op = self._id_table.write(write_rows, id_)
       write_data_op = self._data_table.write(write_rows, items)
@@ -616,11 +611,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
        A TF op setting the priorities according to Prioritized Experience
        Replay.
     """
-    print('\n\n\ntf_set_priority:')
-    print(indices)
-    print(priorities)
-    print(type(indices))
-    print(type(priorities))
     return tf.py_function(self.set_priority, 
                           [indices, priorities],
                           [],
@@ -634,11 +624,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       indices: `np.array` of indices in range [0, replay_capacity).
       priorities: list of floats, the corresponding priorities.
     """
-    print('\n\n\nset_priority')
-    print(indices)
-    print(priorities)
-    print(type(indices))
-    print(type(priorities))
     for i, memory_index in enumerate(indices):
       self.sum_tree.set(memory_index, priorities[i])
   
