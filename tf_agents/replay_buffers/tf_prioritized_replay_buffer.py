@@ -58,7 +58,7 @@ b) Il PRB ha due situazioni diverse in cui assegna la priorità alle transizioni
         Quindi dentro il metodo add_batch (chiamato dal driver) avremmo del codice simile al seguente:
         ...
         indices = self.add_transitions(batch)        # forse per questo si usa self.table_fn
-        self.set_priority(indices, DEFAULT_PRIORITY)  # DEFAUL_PRIORITY=100 in implementazione DeepMind
+        self.set_priority(indices, DEFAULT_PRIORITY)  # DEFAULT_PRIORITY=100 in implementazione DeepMind
         ...
     2) Quando una transizione viene rivista in training, la sua priority viene updatata a seconda
         di quale sia la sua loss. Dobbiamo decidere/capire se fare questo dentro la funzione training 
@@ -286,7 +286,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     with tf.device(self._device), tf.name_scope(self._scope):
       id_ = self._increment_last_id()
       write_rows = self._get_rows_for_id(id_)
-      self.sum_tree.set(write_rows[0], DEFAULT_PRIORITY)
+      self.set_priority(write_rows[0], DEFAULT_PRIORITY)
       write_id_op = self._id_table.write(write_rows, id_)
       write_data_op = self._data_table.write(write_rows, items)
       return tf.group(write_id_op, write_data_op)
@@ -329,7 +329,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
           message='TFPrioritizedReplayBuffer is empty. Make sure to add items '
             'before sampling the buffer.')
         with tf.control_dependencies([assert_nonempty]):
-          ids, probabilities = self.sample_ids_batch(sample_batch_size, num_steps)
+          ids, probabilities = self.tf_sample_ids_batch(sample_batch_size, num_steps)
 
         if num_steps is None:
           rows_to_get = tf.math.mod(ids, self._capacity)
@@ -598,15 +598,31 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     return rows
   
   # Copied from DeepMind's implementation
-  def set_priority(self, indices, priorities):
-    """Sets the priority of the given elements according to Schaul et al.
+  def tf_set_priority(self, indices, priorities):
+    """
+    Sets the priorities for the given indices.
+
+    Args:
+      indices: tensor of indices (int64), size k.
+      losses: tensor of losses (float32), size k.
+
+    Returns:
+       A TF op setting the priorities according to Prioritized Experience
+       Replay.
+    """
+    return tf.py_function(self.set_priority, 
+                          [indices, priorities],
+                          [],
+                          name='TFPrioritizedReplayBuffer_set_priority_py_func')
+    
+  
+  def set_priority(self, indices, priorities)
+  """Sets the priority of the given elements according to Schaul et al.
 
     Args:
       indices: `np.array` of indices in range [0, replay_capacity).
       priorities: list of floats, the corresponding priorities.
     """
-    assert indices.dtype == np.int32, ('Indices must be integers, '
-                                       'given: {}'.format(indices.dtype))
     for i, memory_index in enumerate(indices):
       self.sum_tree.set(memory_index, priorities[i])
   
@@ -634,9 +650,9 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 
     return priority_batch
   
-  def sample_ids_batch(self, sample_batch_size=None, num_steps=None):
+  def tf_sample_ids_batch(self, sample_batch_size=None, num_steps=None):
     """
-    eturns a batch of valid indices.
+    Returns a batch of valid indices.
 
     Args:
       sample_batch_size: (Optional.) An optional batch_size to specify the
@@ -647,14 +663,13 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     Returns:
        A TF op sampling a batch according to Prioritized Experience Replay.
     """
-
-    return tf.py_function(self._sample_ids_batch, 
+    return tf.py_function(self.sample_ids_batch, 
                           [sample_batch_size, num_steps],
                           [tf.int64, tf.float64],
                           name='TFPrioritizedReplayBuffer_sample_ids_batch_py_func')
   
   # Copied from DeepMind's implementation (with adjustments)
-  def _sample_ids_batch(self, sample_batch_size=None, num_steps=None):
+  def sample_ids_batch(self, sample_batch_size=None, num_steps=None):
     """Returns a batch of valid indices.
 
     Args:
