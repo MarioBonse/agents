@@ -41,6 +41,7 @@ from tf_agents.replay_buffers import sum_tree
 
 
 DEFAULT_PRIORITY = 100.0         # copied from DeepMind implementation
+MAXIMUM_SAMPLING_ATTEMPTS = 100
 BufferInfo = collections.namedtuple('BufferInfo',
                                     ['ids', 'probabilities'])
 
@@ -672,7 +673,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     """
     return tf.py_function(self.sample_ids_batch, 
                           [sample_batch_size, num_steps],
-                          [tf.int64, tf.float64],
+                          [tf.int64, tf.float32],
                           name='TFPrioritizedReplayBuffer_sample_ids_batch_py_func')
   
   # Copied from DeepMind's implementation (with adjustments)
@@ -691,15 +692,24 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     """
     indices = []
     probabilities = []
+    sampling_attemps_left = MAXIMUM_SAMPLING_ATTEMPTS
 
-    while len(indices) < sample_batch_size:
+    while len(indices) < sample_batch_size and sampling_attemps_left > 0:
       index, probability = self.sum_tree.sample()
 
       if self.is_valid_transition(index):
         indices.append(index)
         probabilities.append(probability)
+      else:
+        sampling_attemps_left -= 1
 
-    return tf.convert_to_tensor(indices, tf.int64), tf.convert_to_tensor(probabilities, tf.float64)
+    if sampling_attemps_left == 0:
+      raise RuntimeError("Why did it fail so sample so much?\n"
+                          "Sampling attemps: {}"
+                          "Batch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
+                                                            sample_batch_size))
+
+    return tf.convert_to_tensor(indices, tf.int64), tf.convert_to_tensor(probabilities, tf.float32)
 
   # Copied from DeepMind's implementation (with heavy adjustments)
   def is_valid_transition(self, index, num_steps=None):
