@@ -610,7 +610,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 
     Args:
       indices: tensor of indices (int64), size k.
-      losses: tensor of losses (float32), size k.
+      priorities: tensor of priorities (float32), size k.
 
     Returns:
        A TF op setting the priorities according to Prioritized Experience
@@ -626,8 +626,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     """Sets the priority of the given elements according to Schaul et al.
 
     Args:
-      indices: `np.array` of indices in range [0, replay_capacity).
-      priorities: list of floats, the corresponding priorities.
+      indices: tensor of indices (int64), size k.
+      priorities: tensor of priorities (float32), size k.
     """
     for i, memory_index in enumerate(indices):
       self.sum_tree.set(memory_index, priorities[i])
