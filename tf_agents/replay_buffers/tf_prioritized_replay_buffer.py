@@ -292,7 +292,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       print(default_priorities)
       print(type(write_rows))
       print(type(default_priorities))
-      self.set_priority(write_rows, default_priorities)
+      self.tf_set_priority(write_rows, default_priorities)
       write_id_op = self._id_table.write(write_rows, id_)
       write_data_op = self._data_table.write(write_rows, items)
       return tf.group(write_id_op, write_data_op)
