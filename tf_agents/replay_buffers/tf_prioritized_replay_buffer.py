@@ -286,13 +286,13 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     with tf.device(self._device), tf.name_scope(self._scope):
       id_ = self._increment_last_id()
       write_rows = self._get_rows_for_id(id_)
+      default_priorities = tf.ones_like(write_rows)*DEFAULT_PRIORITY
       print('_add_batch')
       print(write_rows)
-      print(write_rows[0])
+      print(default_priorities)
       print(type(write_rows))
-      print(type(write_rows[0]))
-      print(type(DEFAULT_PRIORITY))
-      self.set_priority(write_rows[0], DEFAULT_PRIORITY)
+      print(type(default_priorities))
+      self.set_priority(write_rows, default_priorities)
       write_id_op = self._id_table.write(write_rows, id_)
       write_data_op = self._data_table.write(write_rows, items)
       return tf.group(write_id_op, write_data_op)
