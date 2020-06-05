@@ -322,8 +322,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     Raises:
       ValueError: if num_steps is bigger than the capacity.
     """
-    print('Entering _get_next')
-    tf.print('Entering _get_next - tf')
+    print('Entering _get_next function')
+    tf.print('Entering _get_next function - tf')
     with tf.device(self._device), tf.name_scope(self._scope):
       with tf.name_scope('get_next'):
         rows_shape = () if sample_batch_size is None else (sample_batch_size,)
@@ -365,8 +365,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 
         buffer_info = BufferInfo(ids=data_ids,
                                  probabilities=probabilities)
-    print('Exiting _get_next')
-    tf.print('Exiting _get_next - tf')
+    print('Exiting _get_next function')
+    tf.print('Exiting _get_next function - tf')
     return data, buffer_info
 
   @gin.configurable(
@@ -621,6 +621,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
        A TF op setting the priorities according to Prioritized Experience
        Replay.
     """
+    print('Entering (and exiting) tf_set_priority function')
+    tf.print('Entering (and exiting) tf_set_priority function - tf')
     return tf.py_function(self.set_priority, 
                           [indices, priorities],
                           [],
@@ -675,8 +677,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     Returns:
        A TF op sampling a batch according to Prioritized Experience Replay.
     """
-    print('        Entering (and exiting) tf_sample_ids_batch')
-    tf.print('        Entering (and exiting) tf_sample_ids_batch - tf')
+    print('Entering (and exiting) tf_sample_ids_batch function')
+    tf.print('Entering (and exiting) tf_sample_ids_batch function - tf')
     return tf.py_function(self.sample_ids_batch, 
                           [sample_batch_size, num_steps],
                           [tf.int64, tf.float32],
@@ -696,8 +698,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       Tensors of shape (sample_batch_size,) containing valid indices and
       corresponding sampling probabilities.
     """
-    print('                Entering sample_ids_batch function')
-    tf.print('                Entering sample_ids_batch function - tf')
+    print('Entering sample_ids_batch function')
+    tf.print('Entering sample_ids_batch function - tf')
     indices = []
     probabilities = []
     sampling_attemps_left = MAXIMUM_SAMPLING_ATTEMPTS
@@ -717,8 +719,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
                           "Batch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
                                                             sample_batch_size))
 
-    print('                Exiting sample_ids_batch function')
-    tf.print('                Exiting sample_ids_batch function - tf')
+    print('Exiting sample_ids_batch function')
+    tf.print('Exiting sample_ids_batch function - tf')
 
     return tf.convert_to_tensor(indices, tf.int64), tf.convert_to_tensor(probabilities, tf.float32)
 
@@ -740,8 +742,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
       bool, True if trajoctory is valid.
 
     """
-    print('                        Entering is_valid_transition function')
-    tf.print('                        Entering is_valid_transition function - tf')
+    print('Entering is_valid_transition function')
+    tf.print('Entering is_valid_transition function - tf')
 
     last_id_added = tf.math.mod(self._get_last_id(), self._max_length)
     if num_steps is None:
@@ -765,8 +767,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     if last_id_added - num_steps + 1 < index < last_id_added + 1:
       return False
     
-    print('                        Exiting is_valid_transition function')
-    tf.print('                        Exiting is_valid_transition function - tf')
+    print('Exiting is_valid_transition function')
+    tf.print('Exiting is_valid_transition function - tf')
 
     return True
 
