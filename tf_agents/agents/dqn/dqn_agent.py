@@ -346,8 +346,6 @@ class DqnAgent(tf_agent.TFAgent):
 
   # Use @common.function in graph mode or for speeding up.
   def _train(self, experience, weights):
-    print('Entering _train function')
-    tf.print('Entering _train function - tf')
     with tf.GradientTape() as tape:
       loss_info = self._loss(
           experience,
@@ -378,9 +376,6 @@ class DqnAgent(tf_agent.TFAgent):
         self._optimizer, grads_and_vars, global_step=self.train_step_counter)
 
     self._update_target()
-
-    print('Exiting _train function')
-    tf.print('Exiting _train function - tf')
 
     return loss_info
 

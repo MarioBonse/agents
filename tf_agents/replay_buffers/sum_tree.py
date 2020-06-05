@@ -113,8 +113,6 @@ class SumTree(object):
       Exception: If the sum tree is empty (i.e. its node values sum to 0), or if
         the supplied query_value is larger than the total sum.
     """
-    print('Entering sample (sum_tree) function')
-
     if self._total_priority() == 0.0:
       raise Exception('Cannot sample from an empty sum tree.')
 
@@ -141,8 +139,6 @@ class SumTree(object):
         query_value -= left_sum
 
     probability = self.nodes[-1][node_index] / self._total_priority()
-
-    print('Exiting sample (sum_tree) function')
 
     return node_index, probability
 
