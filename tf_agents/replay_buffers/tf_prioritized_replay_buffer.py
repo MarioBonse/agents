@@ -633,7 +633,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
     Note that the indices are most likely coming from ids in self._id_table.
     As such thet are not (mod capacity) and must be shifted to the correct index
     """
-    tf.math.mod(indices, self._capacity)
+    indices = tf.math.mod(indices, self._capacity)
 
     for i, memory_index in enumerate(indices):
       self.sum_tree.set(memory_index, priorities[i])
