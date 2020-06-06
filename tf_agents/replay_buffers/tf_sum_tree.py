@@ -188,8 +188,8 @@ class TFSumTree(tf.Module):
 
 		This operation takes O(log(capacity)).
 		Args:
-		  node_index: int, the index of the leaf node to be updated.
-		  value: float, the value which we assign to the node. This value must be
+		  node_index: Tensor, dtype=int64 the index of the leaf node to be updated.
+		  value: Tensor, dtype=float32, the value which we assign to the node. This value must be
 				nonnegative. Setting value = 0 will cause the element to never be
 				sampled.
 
@@ -212,7 +212,7 @@ class TFSumTree(tf.Module):
 		# Example:
 		# If I wanted to update the 5th element in a tree of depth 4 (which includes root level, so the
 		# number of leaves is 2**(4-1)) then indices = [4, 2, 1, 0]
-		divs = tf.math.pow(2, tf.range(0, self._tree_depth))
+		divs = tf.math.pow(2, tf.range(0, self._tree_depth, dtype=tf.int64))
 		indices = tf.cast(tf.math.ceil(node_index / divs), tf.int32) - 1
 		rows = self._levels_offsets + indices
 
