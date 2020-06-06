@@ -213,7 +213,7 @@ class TFSumTree(tf.Module):
 		# If I wanted to update the 5th element in a tree of depth 4 (which includes root level, so the
 		# number of leaves is 2**(4-1)) then indices = [4, 2, 1, 0]
 		divs = tf.math.pow(2, tf.range(0, self._tree_depth, dtype=tf.int64))
-		indices = tf.cast(tf.math.ceil(node_index / divs), tf.int32) - 1
+		indices = tf.cast(tf.math.ceil(node_index / divs), tf.int64) - 1
 		rows = self._levels_offsets + indices
 
 		self._table.write(rows, tf.repeat(delta_value, self._tree_depth))
