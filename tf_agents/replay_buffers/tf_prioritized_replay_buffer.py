@@ -683,21 +683,23 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		  Tensors of shape (sample_batch_size,) containing valid indices and
 		  corresponding sampling probabilities.
 		"""
-		sampling_attemps_left = MAXIMUM_SAMPLING_ATTEMPTS
+		sampling_attempts_left = MAXIMUM_SAMPLING_ATTEMPTS
 
-		while sampling_attemps_left > 0:
+		while sampling_attempts_left > 0:
 			indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
 
 			if self.is_valid_transition(indeces, num_steps):
-				return indeces, probabilities
+				break
 			else:
-				sampling_attemps_left -= 1
+				sampling_attempts_left -= 1
 
 		if sampling_attemps_left == 0:
 			raise RuntimeError("Why did it fail so sample so much?\n"
 							   "Sampling attemps: {}"
 							   "Batch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
 																 sample_batch_size))
+		
+		return indeces, probabilities
 
 	# Copied from DeepMind's implementation (with heavy adjustments)
 	def is_valid_transition(self, indeces, num_steps=None):
