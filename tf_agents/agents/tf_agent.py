@@ -206,7 +206,7 @@ class TFAgent(tf.Module):
       RuntimeError: If the class was not initialized properly (`super.__init__`
         was not called).
     """
-    print('Train function is being executed in Python code.'
+    print('Train function is being executed Pythonically'
           '\nThis print should occur only once per agent, per script execution and possibly per process running the code.'
           '\nIf you see this print "a lot" call for help.')
     if self._enable_functions and getattr(self, "_train_fn", None) is None:

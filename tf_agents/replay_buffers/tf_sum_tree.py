@@ -27,180 +27,194 @@ import tensorflow as tf
 import numpy as np
 
 
-class SumTree(object):
-  """A sum tree data structure for storing replay priorities.
+class TFSumTree(tf.Module):
+	"""A sum tree data structure for storing replay priorities.
 
-  A sum tree is a complete binary tree whose leaves contain values called
-  priorities. Internal nodes maintain the sum of the priorities of all leaf
-  nodes in their subtree.
+	A sum tree is a complete binary tree whose leaves contain values called
+	priorities. Internal nodes maintain the sum of the priorities of all leaf
+	nodes in their subtree.
 
-  For capacity = 4, the tree may look like this:
+	For capacity = 4, the tree may look like this:
 
-               +---+
-               |2.5|
-               +-+-+
-                 |
-         +-------+--------+
-         |                |
-       +-+-+            +-+-+
-       |1.5|            |1.0|
-       +-+-+            +-+-+
-         |                |
-    +----+----+      +----+----+
-    |         |      |         |
-  +-+-+     +-+-+  +-+-+     +-+-+
-  |0.5|     |1.0|  |0.5|     |0.5|
-  +---+     +---+  +---+     +---+
+							 +---+
+							 |2.5|
+							 +-+-+
+								   |
+				   +-------+--------+
+				   |                |
+			 +-+-+            +-+-+
+			 |1.5|            |1.0|
+			 +-+-+            +-+-+
+				   |                |
+		  +----+----+      +----+----+
+		  |         |      |         |
+	+-+-+     +-+-+  +-+-+     +-+-+
+	|0.5|     |1.0|  |0.5|     |0.5|
+	+---+     +---+  +---+     +---+
 
-  This is stored in a list of numpy arrays:
-  self.nodes = [ [2.5], [1.5, 1], [0.5, 1, 0.5, 0.5] ]
+	This is stored in a single table.Table object. You can think of it as a single 
+	array that contains eacv level concatenated to the previous one. Taking the example
+	above the array would look like:
+	[2.5, 1.5, 1.0, 0.5, 1.0, 0.5, 0.5]
+	"""
 
-  For conciseness, we allocate arrays as powers of two, and pad the excess
-  elements with zero values.
+	def __init__(self,
+				 capacity,
+				 name='TFSumTree'):
+		"""Creates the sum tree data structure for the given replay capacity.
 
-  This is similar to the usual array-based representation of a complete binary
-  tree, but is a little more user-friendly.
-  """
+		Args:
+		  capacity: int, the maximum number of elements that can be stored in this
+				data structure.
 
-  def __init__(self, capacity):
-    """Creates the sum tree data structure for the given replay capacity.
+		Raises:
+		  ValueError: If requested capacity is not positive.
+		"""
+		super(TFSumTree, self).__init__(name=name)
+		assert isinstance(capacity, (int, np.int64, np.int32))
+		if capacity <= 0:
+			raise ValueError('Sum tree capacity should be positive. Got: {}'.
+							 format(capacity))
 
-    Args:
-      capacity: int, the maximum number of elements that can be stored in this
-        data structure.
+		self._tree_depth = int(np.ceil(np.log2(capacity))) + 1
 
-    Raises:
-      ValueError: If requested capacity is not positive.
-    """
-    assert isinstance(capacity, (int, np.int64, np.int32))
-    if capacity <= 0:
-      raise ValueError('Sum tree capacity should be positive. Got: {}'.
-                       format(capacity))
+		with self.name_scope:
+			tensor_spec = tf.TensorSpec((), tf.float32)
+			self._levels_offsets = tf.math.pow(
+				2, tf.range(0, self._tree_depth, dtype=tf.int64)) - 1
+			total_length = tf.math.reduce_sum(
+				2**tf.range(0, self._tree_depth - 1)) + capacity
+			self._table = table.Table(tensor_spec, total_length)
+			self.max_recorded_priority = tf.constant(1.0, dtype=tf.float32)
 
-    tree_depth = int(np.ceil(np.log2(capacity)))
-    level_names = ['Level_' + str(i) for i in range(tree_depth + 1)]
-    level_shapes = (2**np.arange(0, tree_depth + 1)).tolist()
-    level_dtypes = [tf.float32 for i in range(tree_depth + 1)]
-    level_specs = tf.nest.map_structure(tf.TensorSpec, level_shapes, level_dtypes, level_names)
+	@tf.Module.with_name_scope
+	def _total_priority(self):
+		"""Returns the sum of all priorities stored in this sum tree.
 
-    self._table = table.Table(level_specs, 1)
+		Returns:
+		  float, sum of priorities stored in this sum tree.
+		"""
+		return self._table.read(0)
 
-    self.max_recorded_priority = 1.0
+	@tf.function
+	@tf.Module.with_name_scope
+	def sample(self, shape=()):
+		"""Samples an element from the sum tree.
 
-  def _total_priority(self):
-    """Returns the sum of all priorities stored in this sum tree.
+		Each element has probability p_i / sum_j p_j of being picked, where p_i is
+		the (positive) value associated with node i (possibly unnormalized).
 
-    Returns:
-      float, sum of priorities stored in this sum tree.
-    """
-    return self.nodes[0][0]
+		Args:
+		  query_value: float in [0, 1], used as the random value to select a
+		  sample. If None, will select one randomly in [0, 1).
 
-  def sample(self, query_value=None):
-    """Samples an element from the sum tree.
+		Returns:
+		  int, a random element from the sum tree.
 
-    Each element has probability p_i / sum_j p_j of being picked, where p_i is
-    the (positive) value associated with node i (possibly unnormalized).
+		Raises:
+		  Exception: If the sum tree is empty (i.e. its node values sum to 0), or if
+				the supplied query_value is larger than the total sum.
+		"""
+		print('SumTree.sample function is being executed in Pythonically.'
+          '\nThis print should occur only once per script execution and possibly per process running the code.'
+          '\nIf you see this print "a lot" call for help.')
+		tf.debugging.assert_greater(self._total_priority(), 0,
+									message='Cannot sample from an empty sum tree.')
 
-    Args:
-      query_value: float in [0, 1], used as the random value to select a
-      sample. If None, will select one randomly in [0, 1).
+		def choose_child(inputs):
+			if inputs[1] < inputs[2]:
+				return inputs[0]
+			else:
+				return inputs[0] + 1
+		
 
-    Returns:
-      int, a random element from the sum tree.
+		# Sample a value in range [0, R), where R is the value stored at the root.
+		query_values = tf.random.uniform(shape=shape) * self._total_priority()
 
-    Raises:
-      Exception: If the sum tree is empty (i.e. its node values sum to 0), or if
-        the supplied query_value is larger than the total sum.
-    """
-    if self._total_priority() == 0.0:
-      raise Exception('Cannot sample from an empty sum tree.')
+		# Now traverse the sum tree.
+		node_indeces = tf.zeros(shape=shape, dtype=tf.int32)
 
-    if query_value and (query_value < 0. or query_value > 1.):
-      raise ValueError('query_value must be in [0, 1].')
+		for level_offset in self._levels_offsets[1:]:
+			# Compute children of previous depth's node.
+			left_children = node_indeces * 2
+			left_sums = self._table.read(level_offset + left_children)
+			node_indeces = tf.map_fn(choose_child, (node_indeces, query_values, left_sums), dtype=tf.int32)
 
-    # Sample a value in range [0, R), where R is the value stored at the root.
-    query_value = random.random() if query_value is None else query_value
-    query_value *= self._total_priority()
+		probabilities = self._table.read(node_indeces) / self._total_priority()
 
-    # Now traverse the sum tree.
-    node_index = 0
-    for nodes_at_this_depth in self.nodes[1:]:
-      # Compute children of previous depth's node.
-      left_child = node_index * 2
+		return node_indeces, probabilities
 
-      left_sum = nodes_at_this_depth[left_child]
-      # Each subtree describes a range [0, a), where a is its value.
-      if query_value < left_sum:  # Recurse into left subtree.
-        node_index = left_child
-      else:  # Recurse into right subtree.
-        node_index = left_child + 1
-        # Adjust query to be relative to right subtree.
-        query_value -= left_sum
+	@tf.Module.with_name_scope
+	def stratified_sample(self, batch_size):
+		"""Performs stratified sampling using the sum tree.
 
-    probability = self.nodes[-1][node_index] / self._total_priority()
+		Let R be the value at the root (total value of sum tree). This method will
+		divide [0, R) into batch_size segments, pick a random number from each of
+		those segments, and use that random number to sample from the sum_tree. This
+		is as specified in Schaul et al. (2015).
 
-    return node_index, probability
+		Args:
+		  batch_size: int, the number of strata to use.
+		Returns:
+		  list of batch_size elements sampled from the sum tree.
 
-  def stratified_sample(self, batch_size):
-    """Performs stratified sampling using the sum tree.
+		Raises:
+		  Exception: If the sum tree is empty (i.e. its node values sum to 0).
+		"""
+		raise NotImplementedError
+		if self._total_priority() == 0.0:
+			raise Exception('Cannot sample from an empty sum tree.')
 
-    Let R be the value at the root (total value of sum tree). This method will
-    divide [0, R) into batch_size segments, pick a random number from each of
-    those segments, and use that random number to sample from the sum_tree. This
-    is as specified in Schaul et al. (2015).
+		bounds = np.linspace(0., 1., batch_size + 1)
+		assert len(bounds) == batch_size + 1
+		segments = [(bounds[i], bounds[i+1]) for i in range(batch_size)]
+		query_values = [tf.random.uniform(x[0], x[1]) for x in segments]
+		return [self.sample(query_value=x) for x in query_values]
 
-    Args:
-      batch_size: int, the number of strata to use.
-    Returns:
-      list of batch_size elements sampled from the sum tree.
+	@tf.Module.with_name_scope
+	def get(self, node_index):
+		"""Returns the value of the leaf node corresponding to the index.
 
-    Raises:
-      Exception: If the sum tree is empty (i.e. its node values sum to 0).
-    """
-    if self._total_priority() == 0.0:
-      raise Exception('Cannot sample from an empty sum tree.')
+		Args:
+		  node_index: The index of the leaf node.
+		Returns:
+		  The value of the leaf node.
+		"""
+		return self._table.read(node_index)
 
-    bounds = np.linspace(0., 1., batch_size + 1)
-    assert len(bounds) == batch_size + 1
-    segments = [(bounds[i], bounds[i+1]) for i in range(batch_size)]
-    query_values = [random.uniform(x[0], x[1]) for x in segments]
-    return [self.sample(query_value=x) for x in query_values]
+	@tf.Module.with_name_scope
+	def set(self, node_index, value):
+		"""Sets the value of a leaf node and updates internal nodes accordingly.
 
-  def get(self, node_index):
-    """Returns the value of the leaf node corresponding to the index.
+		This operation takes O(log(capacity)).
+		Args:
+		  node_index: int, the index of the leaf node to be updated.
+		  value: float, the value which we assign to the node. This value must be
+				nonnegative. Setting value = 0 will cause the element to never be
+				sampled.
 
-    Args:
-      node_index: The index of the leaf node.
-    Returns:
-      The value of the leaf node.
-    """
-    return self.nodes[-1][node_index]
+		Raises:
+		  ValueError: If the given value is negative.
+		"""
+		tf.debugging.assert_greater(
+			value,
+			tf.constant(0, tf.float32),
+			message='Sum tree values should be nonnegative. Got {}'.format(value))
 
-  def set(self, node_index, value):
-    """Sets the value of a leaf node and updates internal nodes accordingly.
+		self.max_recorded_priority = tf.math.maximum(
+			value, self.max_recorded_priority)
+		delta_value = value - self._table.read(node_index)
 
-    This operation takes O(log(capacity)).
-    Args:
-      node_index: int, the index of the leaf node to be updated.
-      value: float, the value which we assign to the node. This value must be
-        nonnegative. Setting value = 0 will cause the element to never be
-        sampled.
+		# Updating the priority value of the given leaf node and also of all its parent nodes
+		# node that the first parent of node_index is at index (ceil(node_index/2) - 1) in the level
+		# above, the second parend is at index (ceil(node_index/4) - 1). The variable indices computed
+		# below corresponds to the index of every node to be updated in their respective level.
+		# Example:
+		# If I wanted to update the 5th element in a tree of depth 4 (which includes root level, so the
+		# number of leaves is 2**(4-1)) then indices = [4, 2, 1, 0]
+		divs = tf.math.pow(2, tf.range(0, self._tree_depth))
+		indices = tf.cast(tf.math.ceil(node_index / divs), tf.int32) - 1
+		rows = self._levels_offsets + indices
 
-    Raises:
-      ValueError: If the given value is negative.
-    """
-    if value < 0.0:
-      raise ValueError('Sum tree values should be nonnegative. Got {}'.
-                       format(value))
-    self.max_recorded_priority = max(value, self.max_recorded_priority)
+		self._table.write(rows, tf.repeat(delta_value, self._tree_depth))
 
-    delta_value = value - self.nodes[-1][node_index]
-
-    # Now traverse back the tree, adjusting all sums along the way.
-    for nodes_at_this_depth in reversed(self.nodes):
-      # Note: Adding a delta leads to some tolerable numerical inaccuracies.
-      nodes_at_this_depth[node_index] += delta_value
-      node_index //= 2
-
-    assert node_index == 0, ('Sum tree traversal failed, final node index '
-                             'is not 0.')
