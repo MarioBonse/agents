@@ -670,6 +670,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		return priority_batch
 
 	# Copied from DeepMind's implementation (with adjustments)
+	@tf.function
 	def sample_ids_batch(self, sample_batch_size=(), num_steps=None):
 		"""Returns a batch of valid indices.
 
