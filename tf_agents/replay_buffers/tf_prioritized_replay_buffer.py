@@ -685,8 +685,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		"""
 
 		def loop_cond(sampling_attempts_left, is_valid_flag, *_):
-			tf.print(is_valid_flag, '    TF')
-			print(is_valid_flag)
 			return tf.math.logical_and(
 				tf.math.greater(sampling_attempts_left, 0),
 				tf.math.logical_not(is_valid_flag))
@@ -714,11 +712,10 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 			tf.stop_gradient, tf.while_loop(
 				loop_cond, loop_body, [sampling_attempts_left, is_valid_flag, indeces, probabilities]))
 
-
-		if sampling_attempts_left == 0:
-			raise RuntimeError("Why did it fail so sample so much?\n"
-							   "Sampling attemps: {}"
-							   "\nBatch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
+		tf.debugging.assert_greater(sampling_attempts_left, 0,
+									message="Why did it fail so sample so much?\n"
+									"Sampling attemps: {}"
+									"\nBatch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
 																 sample_batch_size))
 		
 		return indeces, probabilities

@@ -118,7 +118,6 @@ class TFSumTree(tf.Module):
 		print('SumTree.sample function is being executed in Pythonically.'
           '\nThis print should occur only once per script execution and possibly per process running the code.'
           '\nIf you see this print "a lot" call for help.')
-		tf.print('SumTree.sample')
 		tf.debugging.assert_greater(self._total_priority(), 0.0,
 									message='Cannot sample from an empty sum tree.')
 		@tf.function
