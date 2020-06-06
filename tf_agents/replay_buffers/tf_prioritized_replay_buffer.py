@@ -728,8 +728,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 			tf.math.reduce_any(are_out_of_range), ["SumTree isn't supposed to return this index", indeces])
 
 		# The trajectory and the following steps must be smaller than last_id_added
-		lower_bound = tf.cast(last_id_added - num_steps + 1, tf.int32)
-		upper_bound = tf.cast(last_id_added + 1, tf.int32)
+		lower_bound = tf.cast(last_id_added - num_steps + 1, tf.int64)
+		upper_bound = tf.cast(last_id_added + 1, tf.int64)
 
 		are_invalid = tf.math.logical_and(tf.math.less(lower_bound, indeces),
 										tf.math.less(indeces, upper_bound))
