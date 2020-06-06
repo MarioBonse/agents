@@ -712,7 +712,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 			tf.stop_gradient, tf.while_loop(
 				loop_cond, loop_body, [sampling_attempts_left, is_valid_flag, indeces, probabilities]))
 
-		sampling_attemps_left, is_valid_flag, indeces, probabilities = results
 
 		if sampling_attemps_left == 0:
 			raise RuntimeError("Why did it fail so sample so much?\n"
