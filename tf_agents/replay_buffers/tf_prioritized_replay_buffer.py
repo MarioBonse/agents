@@ -684,16 +684,16 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		  corresponding sampling probabilities.
 		"""
 
-		def loop_cond(sampling_attemps_left, is_valid_flag, *_):
+		def loop_cond(sampling_attempts_left, is_valid_flag, *_):
 			return tf.math.logical_and(
-				tf.math.greater(sampling_attemps_left, 0),
+				tf.math.greater(sampling_attempts_left, 0),
 				tf.math.logical_not(is_valid_flag))
 		
-		def loop_body(sampling_attemps_left, is_valid_flag, indeces, probabilities):
+		def loop_body(sampling_attempts_left, is_valid_flag, indeces, probabilities):
 			indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
-			sampling_attemps_left -= 1
+			sampling_attempts_left -= 1
 			is_valid_flag = self.is_valid_transition(indeces, num_steps)
-			return [sampling_attemps_left, is_valid_flag, indeces, probabilities]
+			return [sampling_attempts_left, is_valid_flag, indeces, probabilities]
 		
 		sampling_attempts_left = MAXIMUM_SAMPLING_ATTEMPTS
 
@@ -710,7 +710,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		is_valid_flag = False
 		[sampling_attemps_left, is_valid_flag, indeces, probabilities] = tf.nest.map_structure(
 			tf.stop_gradient, tf.while_loop(
-				loop_cond, loop_body, [sampling_attemps_left, is_valid_flag, indeces, probabilities]))
+				loop_cond, loop_body, [sampling_attempts_left, is_valid_flag, indeces, probabilities]))
 
 		sampling_attemps_left, is_valid_flag, indeces, probabilities = results
 
