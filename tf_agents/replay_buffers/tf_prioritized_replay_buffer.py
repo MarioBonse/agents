@@ -747,18 +747,10 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		# if index < 0 or index >= self._max_length:
 		#  raise RuntimeError("Why did this case occur? SumTree isn't supposed to return this index: {}".format(index))
 		#  return False
-		print(indeces, '       indeces')
-		print(type(indeces), '      type(indeces)')
-		tf.print(indeces, '       indeces')
-		tf.print(type(indeces), '      type(indeces)')
-		print(are_out_of_range, '       are_out_of_range')
-		tf.print(are_out_of_range, '       are_out_of_range')
-		print(tf.math.less(indeces, 0), '       less_cond')
-		tf.print(tf.math.less(indeces, 0), '       less_cond')
-		print(tf.math.greater_equal(indeces, self._max_length), '       greater_cond')
-		tf.print(tf.math.greater_equal(indeces, self._max_length), '       greater_cond')
 		check_op = tf.debugging.Assert(
-			tf.math.reduce_any(are_out_of_range), ["SumTree isn't supposed to return this index", indeces], summarize=-1)
+			tf.math.logical_not(tf.math.reduce_any(are_out_of_range)),
+			["SumTree isn't supposed to return this index", indeces],
+			summarize=-1)
 
 		# The trajectory and the following steps must be smaller than last_id_added
 		lower_bound = tf.cast(last_id_added - num_steps + 1, tf.int64)
