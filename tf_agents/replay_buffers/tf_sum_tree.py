@@ -212,14 +212,14 @@ class TFSumTree(tf.Module):
 		delta_value = value - self._table.read(node_index)
 
 		# Updating the priority value of the given leaf node and also of all its parent nodes
-		# node that the first parent of node_index is at index (ceil(node_index/2) - 1) in the level
-		# above, the second parend is at index (ceil(node_index/4) - 1). The variable indices computed
+		# node that the first parent of node_index is at index (floor(node_index/2)) in the level
+		# above, the second parent is at index (floor(node_index/4)). The variable indices computed
 		# below corresponds to the index of every node to be updated in their respective level.
 		# Example:
 		# If I wanted to update the 5th element in a tree of depth 4 (which includes root level, so the
 		# number of leaves is 2**(4-1)) then indices = [4, 2, 1, 0]
 		divs = tf.math.pow(2, tf.range(0, self._tree_depth, dtype=tf.int64))
-		indices = tf.cast(tf.math.ceil(node_index / divs), tf.int64) - 1
+		indices = tf.cast(tf.math.floor(node_index / divs), tf.int64)
 		rows = self._levels_offsets + indices
 
 		print('set function called')
