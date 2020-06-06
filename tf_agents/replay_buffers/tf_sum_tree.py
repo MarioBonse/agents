@@ -143,8 +143,6 @@ class TFSumTree(tf.Module):
 
 		probabilities = self._table.read(node_indeces) / self._total_priority()
 
-		tf.print(node_indeces)
-
 		return node_indeces, probabilities
 
 	@tf.Module.with_name_scope
@@ -218,12 +216,6 @@ class TFSumTree(tf.Module):
 		divs = tf.math.pow(2, tf.range(0, self._tree_depth, dtype=tf.int64))[::-1]
 		indices = tf.cast(tf.math.floor(node_index / divs), tf.int64)
 		rows = self._levels_offsets + indices
-
-		print('Node Index: ', node_index)
-		print('Divs: ', divs)
-		print('Indices: ', indices)
-		print('Rows: ', rows)
-		print('\n\n')
 
 		self._table.write(rows, tf.repeat(delta_value, self._tree_depth))
 
