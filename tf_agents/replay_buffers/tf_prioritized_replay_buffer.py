@@ -686,7 +686,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		sampling_attemps_left = MAXIMUM_SAMPLING_ATTEMPTS
 
 		while sampling_attemps_left > 0:
-			indeces, probabilities = self.sum_tree.sample(sample_batch_size)
+			indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
 
 			if self.is_valid_transition(indeces, num_steps):
 				return indeces, probabilities

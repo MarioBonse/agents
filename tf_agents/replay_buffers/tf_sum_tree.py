@@ -118,7 +118,7 @@ class TFSumTree(tf.Module):
 		print('SumTree.sample function is being executed in Pythonically.'
           '\nThis print should occur only once per script execution and possibly per process running the code.'
           '\nIf you see this print "a lot" call for help.')
-		tf.debugging.assert_greater(self._total_priority(), 0,
+		tf.debugging.assert_greater(self._total_priority(), 0.0,
 									message='Cannot sample from an empty sum tree.')
 
 		def choose_child(inputs):
@@ -134,8 +134,9 @@ class TFSumTree(tf.Module):
 		# Now traverse the sum tree.
 		node_indeces = tf.zeros(shape=shape, dtype=tf.int32)
 
-		for level_offset in self._levels_offsets[1:]:
+		for i in tf.range(1, self._tree_depth + 1):
 			# Compute children of previous depth's node.
+			level_offset = self._levels_offsets[i]
 			left_children = node_indeces * 2
 			left_sums = self._table.read(level_offset + left_children)
 			node_indeces = tf.map_fn(choose_child, (node_indeces, query_values, left_sums), dtype=tf.int32)
