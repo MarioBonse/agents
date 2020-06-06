@@ -143,6 +143,8 @@ class TFSumTree(tf.Module):
 
 		probabilities = self._table.read(node_indeces) / self._total_priority()
 
+		tf.print(node_indeces)
+
 		return node_indeces, probabilities
 
 	@tf.Module.with_name_scope

@@ -693,6 +693,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 			indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
 			sampling_attempts_left -= 1
 			is_valid_flag = self.is_valid_transition(indeces, num_steps)
+			tf.print(is_valid_flag)
 			return [sampling_attempts_left, is_valid_flag, indeces, probabilities]
 		
 		sampling_attempts_left = MAXIMUM_SAMPLING_ATTEMPTS
