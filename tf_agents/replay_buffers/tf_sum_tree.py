@@ -82,11 +82,11 @@ class TFSumTree(tf.Module):
 			tensor_spec = tf.TensorSpec((), tf.float32)
 			self._levels_offsets = tf.math.pow(
 				2, tf.range(0, self._tree_depth, dtype=tf.int64)) - 1
+			total_length = tf.math.reduce_sum(
+				2**tf.range(0, self._tree_depth - 1)) + capacity
 			print('Tree Depth: ', self._tree_depth)
 			print('Levels offsets: ', self._levels_offsets)
 			print('Total length: ', total_length)
-			total_length = tf.math.reduce_sum(
-				2**tf.range(0, self._tree_depth - 1)) + capacity
 			self._table = table.Table(tensor_spec, total_length)
 			self.max_recorded_priority = tf.constant(1.0, dtype=tf.float32)
 
