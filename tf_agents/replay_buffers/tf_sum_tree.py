@@ -132,7 +132,7 @@ class TFSumTree(tf.Module):
 		query_values = tf.random.uniform(shape=shape) * self._total_priority()
 
 		# Now traverse the sum tree.
-		node_indeces = tf.zeros(shape=shape, dtype=tf.int32)
+		node_indeces = tf.zeros(shape=shape, dtype=tf.int64)
 
 		for i in range(1, self._tree_depth + 1):
 			# Compute children of previous depth's node.
