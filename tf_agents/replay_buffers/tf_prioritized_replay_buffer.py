@@ -718,7 +718,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		if sampling_attempts_left == 0:
 			raise RuntimeError("Why did it fail so sample so much?\n"
 							   "Sampling attemps: {}"
-							   "Batch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
+							   "\nBatch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
 																 sample_batch_size))
 		
 		return indeces, probabilities
