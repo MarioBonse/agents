@@ -204,7 +204,7 @@ class TFSumTree(tf.Module):
 
 		self.max_recorded_priority = tf.math.maximum(
 			value, self.max_recorded_priority)
-		delta_value = value - self._table.read(node_index)
+		delta_value = value - self._table.read(self._levels_offsets[-1] + node_index)
 
 		# Updating the priority value of the given leaf node and also of all its parent nodes
 		# node that the first parent of node_index is at index (floor(node_index/2)) in the level
