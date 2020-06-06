@@ -693,7 +693,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 			indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
 			sampling_attempts_left -= 1
 			is_valid_flag = self.is_valid_transition(indeces, num_steps)
-			tf.print(is_valid_flag)
+			print(is_valid_flag)
+			tf.print(is_valid_flag, '    TF')
 			return [sampling_attempts_left, is_valid_flag, indeces, probabilities]
 		
 		sampling_attempts_left = MAXIMUM_SAMPLING_ATTEMPTS
@@ -746,6 +747,16 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		# if index < 0 or index >= self._max_length:
 		#  raise RuntimeError("Why did this case occur? SumTree isn't supposed to return this index: {}".format(index))
 		#  return False
+		print(indeces)
+		print(type(indeces))
+		tf.print(indeces)
+		tf.print(type(indeces))
+		print(are_out_of_range)
+		tf.print(are_out_of_range)
+		print(tf.math.less(indeces, 0))
+		tf.print(tf.math.less(indeces, 0))
+		print(tf.math.greater_equal(indeces, self._max_length))
+		tf.print(tf.math.greater_equal(indeces, self._max_length))
 		check_op = tf.debugging.Assert(
 			tf.math.reduce_any(are_out_of_range), ["SumTree isn't supposed to return this index", indeces], summarize=-1)
 

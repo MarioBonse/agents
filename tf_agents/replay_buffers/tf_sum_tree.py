@@ -115,7 +115,7 @@ class TFSumTree(tf.Module):
 		  Exception: If the sum tree is empty (i.e. its node values sum to 0), or if
 				the supplied query_value is larger than the total sum.
 		"""
-		print('SumTree.sample function is being executed in Pythonically.'
+		print('SumTree.sample function is being executed Pythonically.'
           '\nThis print should occur only once per script execution and possibly per process running the code.'
           '\nIf you see this print "a lot" call for help.')
 		tf.debugging.assert_greater(self._total_priority(), 0.0,
