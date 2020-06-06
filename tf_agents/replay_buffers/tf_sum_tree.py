@@ -219,5 +219,8 @@ class TFSumTree(tf.Module):
 		indices = tf.cast(tf.math.ceil(node_index / divs), tf.int64) - 1
 		rows = self._levels_offsets + indices
 
+		print('set function called')
+		print(rows)
+
 		self._table.write(rows, tf.repeat(delta_value, self._tree_depth))
 
