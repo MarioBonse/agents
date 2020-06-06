@@ -134,7 +134,7 @@ class TFSumTree(tf.Module):
 		# Now traverse the sum tree.
 		node_indeces = tf.zeros(shape=shape, dtype=tf.int32)
 
-		for i in tf.range(1, self._tree_depth + 1):
+		for i in range(1, self._tree_depth + 1):
 			# Compute children of previous depth's node.
 			level_offset = self._levels_offsets[i]
 			left_children = node_indeces * 2
