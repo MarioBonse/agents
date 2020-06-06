@@ -685,6 +685,8 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		"""
 
 		def loop_cond(sampling_attempts_left, is_valid_flag, *_):
+			tf.print(is_valid_flag, '    TF')
+			print(is_valid_flag)
 			return tf.math.logical_and(
 				tf.math.greater(sampling_attempts_left, 0),
 				tf.math.logical_not(is_valid_flag))
@@ -708,12 +710,12 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 
 		indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
 		is_valid_flag = False
-		[sampling_attemps_left, is_valid_flag, indeces, probabilities] = tf.nest.map_structure(
+		[sampling_attempts_left, is_valid_flag, indeces, probabilities] = tf.nest.map_structure(
 			tf.stop_gradient, tf.while_loop(
 				loop_cond, loop_body, [sampling_attempts_left, is_valid_flag, indeces, probabilities]))
 
 
-		if sampling_attemps_left == 0:
+		if sampling_attempts_left == 0:
 			raise RuntimeError("Why did it fail so sample so much?\n"
 							   "Sampling attemps: {}"
 							   "Batch size to sample: {}".format(MAXIMUM_SAMPLING_ATTEMPTS,
