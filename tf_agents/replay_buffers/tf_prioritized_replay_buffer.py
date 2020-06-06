@@ -670,7 +670,6 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		return priority_batch
 
 	# Copied from DeepMind's implementation (with adjustments)
-	@tf.function
 	def sample_ids_batch(self, sample_batch_size=(), num_steps=None):
 		"""Returns a batch of valid indices.
 
@@ -684,15 +683,36 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		  Tensors of shape (sample_batch_size,) containing valid indices and
 		  corresponding sampling probabilities.
 		"""
+
+		def loop_cond(sampling_attemps_left, is_valid_flag, *_):
+			return tf.math.logical_and(
+				tf.math.greater(sampling_attemps_left, 0),
+				tf.math.logical_not(is_valid_flag))
+		
+		def loop_body(sampling_attemps_left, is_valid_flag, indeces, probabilities):
+			indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
+			sampling_attemps_left -= 1
+			is_valid_flag = self.is_valid_transition(indeces, num_steps)
+			return [sampling_attemps_left, is_valid_flag, indeces, probabilities]
+		
 		sampling_attempts_left = MAXIMUM_SAMPLING_ATTEMPTS
 
-		while sampling_attempts_left > 0:
-			indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
+		#while sampling_attempts_left > 0:
+		#	indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
 
-			if self.is_valid_transition(indeces, num_steps):
-				break
-			else:
-				sampling_attempts_left -= 1
+		#	if self.is_valid_transition(indeces, num_steps):
+		#		break
+		#	else:
+		#		sampling_attempts_left -= 1
+
+
+		indeces, probabilities = self.sum_tree.sample(shape=sample_batch_size)
+		is_valid_flag = False
+		[sampling_attemps_left, is_valid_flag, indeces, probabilities] = tf.nest.map_structure(
+			tf.stop_gradient, tf.while_loop(
+				loop_cond, loop_body, [sampling_attemps_left, is_valid_flag, indeces, probabilities]))
+
+		sampling_attemps_left, is_valid_flag, indeces, probabilities = results
 
 		if sampling_attemps_left == 0:
 			raise RuntimeError("Why did it fail so sample so much?\n"
