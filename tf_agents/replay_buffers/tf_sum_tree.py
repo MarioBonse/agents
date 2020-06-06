@@ -139,7 +139,7 @@ class TFSumTree(tf.Module):
 			level_offset = self._levels_offsets[i]
 			left_children = node_indeces * 2
 			left_sums = self._table.read(level_offset + left_children)
-			node_indeces = tf.map_fn(choose_child, (node_indeces, query_values, left_sums), dtype=tf.int32)
+			node_indeces = tf.map_fn(choose_child, (node_indeces, query_values, left_sums), dtype=tf.int64)
 
 		probabilities = self._table.read(node_indeces) / self._total_priority()
 
