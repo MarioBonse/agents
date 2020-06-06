@@ -218,8 +218,5 @@ class TFSumTree(tf.Module):
 		rows = self._levels_offsets + indices
 		
 		previous_values = self._table.read(rows)
-		print('Previous values: ', previous_values)
-		print('Delta value: ', delta_value)
-		print('Sum: ', previous_values + delta_value)
 		self._table.write(rows, previous_values + delta_value)
 
