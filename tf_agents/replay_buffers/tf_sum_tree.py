@@ -120,7 +120,7 @@ class TFSumTree(tf.Module):
           '\nIf you see this print "a lot" call for help.')
 		tf.debugging.assert_greater(self._total_priority(), 0.0,
 									message='Cannot sample from an empty sum tree.')
-
+		@tf.function
 		def choose_child(inputs):
 			if inputs[1] < inputs[2]:
 				return inputs[0]
