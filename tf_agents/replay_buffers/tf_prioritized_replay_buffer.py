@@ -37,7 +37,7 @@ from tf_agents.replay_buffers import replay_buffer
 from tf_agents.replay_buffers import table
 from tf_agents.specs import tensor_spec
 from tf_agents.utils import common
-from tf_agents.replay_buffers import sum_tree
+from tf_agents.replay_buffers import tf_sum_tree
 
 
 DEFAULT_PRIORITY = 100.0         # copied from DeepMind implementation
@@ -238,7 +238,7 @@ class TFPrioritizedReplayBuffer(replay_buffer.ReplayBuffer):
 		self._table_fn = table_fn
 		self._dataset_drop_remainder = dataset_drop_remainder
 		self._dataset_window_shift = dataset_window_shift
-		self.sum_tree = sum_tree.SumTree(self._capacity_value)
+		self.sum_tree = tf_sum_tree.TFSumTree(self._capacity_value)
 		with tf.device(self._device), tf.compat.v1.variable_scope(self._scope):
 			self._capacity = tf.constant(capacity, dtype=tf.int64)
 			self._data_table = table_fn(self._data_spec, self._capacity_value)
