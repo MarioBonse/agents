@@ -216,6 +216,7 @@ class TFSumTree(tf.Module):
 		divs = tf.math.pow(2, tf.range(0, self._tree_depth, dtype=tf.int64))[::-1]
 		indices = tf.cast(tf.math.floor(node_index / divs), tf.int64)
 		rows = self._levels_offsets + indices
-
-		self._table.write(rows, tf.repeat(delta_value, self._tree_depth))
+		
+		previous_values = self._table.read(rows)
+		self._table.write(rows, previous_values + delta_value)
 
