@@ -198,7 +198,7 @@ class TFSumTree(tf.Module):
 		Raises:
 		  ValueError: If the given value is negative.
 		"""
-		tf.debugging.assert_greater(
+		tf.debugging.assert_greater_equal(
 			value,
 			tf.constant(0, tf.float32),
 			message='Sum tree values should be nonnegative. Got {}'.format(value))
