@@ -118,7 +118,7 @@ class TFSumTree(tf.Module):
 		print('SumTree.sample function is being executed Pythonically.'
           '\nThis print should occur only once per script execution and possibly per process running the code.'
           '\nIf you see this print "a lot" call for help.')
-		tf.debugging.assert_greater(self._total_priority(), 0.0,
+		tf.debugging.assert_greater_equal(self._total_priority(), 0.0,
 									message='Cannot sample from an empty sum tree.')
 		@tf.function
 		def choose_child(inputs):
